@@ -2,42 +2,112 @@ pipeline {
 
   agent any
 
+  environment {
+    DOCKER_IMAGE  = "${DOCKER_USERNAME}/devsecops-app"
+    IMAGE_TAG     = "${GIT_COMMIT[0..7]}"
+    NAMESPACE     = "devsecops"
+    GITOPS_REPO   = "https://github.com/USERNAME/gitops-manifests.git"
+  }
+
   stages {
 
     stage('Checkout') {
       steps {
-        git 'https://github.com/USERNAME/repo.git'
+        checkout scm
       }
     }
 
+    // ── Stage 1: Code Quality Gate ──────────────────────────
     stage('SonarQube Scan') {
       steps {
-        sh 'sonar-scanner'
+        withSonarQubeEnv('SonarQube') {
+          sh 'sonar-scanner'
+        }
       }
     }
 
     stage('Quality Gate') {
       steps {
-        waitForQualityGate abortPipeline: true
+        timeout(time: 5, unit: 'MINUTES') {
+          waitForQualityGate abortPipeline: true
+        }
       }
     }
 
+    // ── Stage 2: Build ──────────────────────────────────────
     stage('Docker Build') {
       steps {
-        sh 'docker build -t devsecops-app .'
+        sh "docker build -t ${DOCKER_IMAGE}:${IMAGE_TAG} ."
       }
     }
 
-    stage('Trivy Scan') {
+    // ── Stage 3: Security Scan ──────────────────────────────
+    stage('Trivy Security Scan') {
       steps {
-        sh 'trivy image devsecops-app'
+        sh """
+          trivy image \
+            --exit-code 1 \
+            --ignore-unfixed \
+            --severity HIGH,CRITICAL \
+            --output trivy-report.txt \
+            ${DOCKER_IMAGE}:${IMAGE_TAG}
+        """
+      }
+      post {
+        always {
+          archiveArtifacts artifacts: 'trivy-report.txt', allowEmptyArchive: true
+        }
       }
     }
 
+    // ── Stage 4: Push (only after scan passes) ──────────────
     stage('Docker Push') {
       steps {
-        sh 'docker push USERNAME/devsecops-app:latest'
+        withCredentials([usernamePassword(
+          credentialsId: 'dockerhub-credentials',
+          usernameVariable: 'DOCKER_USERNAME',
+          passwordVariable: 'DOCKER_PASSWORD'
+        )]) {
+          sh 'echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin'
+          sh "docker push ${DOCKER_IMAGE}:${IMAGE_TAG}"
+          sh "docker tag ${DOCKER_IMAGE}:${IMAGE_TAG} ${DOCKER_IMAGE}:latest"
+          sh "docker push ${DOCKER_IMAGE}:latest"
+        }
       }
+    }
+
+    // ── Stage 5: GitOps Update (ArgoCD picks up the change) ─
+    stage('Update GitOps Manifest') {
+      steps {
+        withCredentials([usernamePassword(
+          credentialsId: 'github-credentials',
+          usernameVariable: 'GIT_USER',
+          passwordVariable: 'GIT_TOKEN'
+        )]) {
+          sh """
+            git clone https://${GIT_USER}:${GIT_TOKEN}@github.com/USERNAME/gitops-manifests.git /tmp/gitops
+            sed -i 's|image: ${DOCKER_IMAGE}:.*|image: ${DOCKER_IMAGE}:${IMAGE_TAG}|' /tmp/gitops/deployment.yaml
+            cd /tmp/gitops
+            git config user.email "jenkins@ci.local"
+            git config user.name "Jenkins"
+            git add deployment.yaml
+            git commit -m "ci: update image to ${IMAGE_TAG} [skip ci]"
+            git push
+          """
+        }
+      }
+    }
+  }
+
+  post {
+    success {
+      echo "✅ DevSecOps pipeline passed — ${DOCKER_IMAGE}:${IMAGE_TAG} — ArgoCD will sync to EKS"
+    }
+    failure {
+      echo "❌ Pipeline failed — check Quality Gate, Trivy scan, or deployment logs"
+    }
+    always {
+      sh 'docker logout || true'
     }
   }
 }

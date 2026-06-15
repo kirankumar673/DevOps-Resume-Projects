@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: postgres
+  namespace: voting-app
 spec:
   replicas: 1
   selector:
@@ -17,8 +18,32 @@ spec:
         image: postgres:15
         env:
         - name: POSTGRES_USER
-          value: admin
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: POSTGRES_USER
         - name: POSTGRES_PASSWORD
-          value: password
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: POSTGRES_PASSWORD
         - name: POSTGRES_DB
-          value: votes
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: POSTGRES_DB
+        ports:
+        - containerPort: 5432
+        resources:
+          requests:
+            cpu: "250m"
+            memory: "256Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+        readinessProbe:
+          exec:
+            command: ["pg_isready", "-U", "admin"]
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          failureThreshold: 5

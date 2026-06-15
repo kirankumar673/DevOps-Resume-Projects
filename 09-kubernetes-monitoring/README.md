@@ -2,216 +2,370 @@
 
 ## Problem Statement
 
-Your company has deployed applications on Kubernetes.
+Your company has deployed applications on Kubernetes with no visibility into cluster health.
 
 Current Problems:
 
-- No visibility into cluster health
-- No CPU monitoring
-- No Memory monitoring
-- No dashboards
-- No performance insights
+- No visibility into CPU or memory usage
+- No alerts when pods crash or nodes are under pressure
+- No dashboards for operations teams
+- No way to detect performance degradation before it causes outages
 
-Build a monitoring solution using Prometheus and Grafana.
+Build a monitoring solution using Prometheus and Grafana deployed via Helm.
 
 ---
 
 ## Architecture
 
+```
 Kubernetes Cluster
        │
-       ▼
-Prometheus
+       ├── Node Exporter (DaemonSet)     ← Collects node-level metrics (CPU, memory, disk)
+       ├── kube-state-metrics            ← Collects pod/deployment/service state metrics
        │
        ▼
-Metrics Storage
+Prometheus Server
+(Scrapes and stores metrics)
        │
        ▼
 Grafana
+(Visualises metrics as dashboards)
        │
        ▼
-Dashboards
+Browser → http://localhost:3000
+
+All resources in namespace: monitoring
+```
+
+---
+
+## Project Structure
+
+```
+09-kubernetes-monitoring/
+├── README.md
+└── Resume-Points.md
+    (No YAML files needed — everything deployed via Helm)
+```
 
 ---
 
 ## Prerequisites
 
-- Minikube Installed
-- kubectl Installed
-- Helm Installed
-- Kubernetes Cluster Running
+- Minikube installed → [Install Minikube](https://minikube.sigs.k8s.io/docs/start/)
+- kubectl installed → [Install kubectl](https://kubernetes.io/docs/tasks/tools/)
+- Helm installed → [Install Helm](https://helm.sh/docs/intro/install/)
+
+Verify all tools:
+
+```bash
+minikube version
+kubectl version --client
+helm version
+```
 
 ---
 
-## Step 1 - Start Kubernetes
+## Step 1 - Start Minikube
 
+```bash
 minikube start
+```
 
-Verify:
+Verify the cluster is ready:
 
+```bash
 kubectl get nodes
+```
 
 Expected:
 
-minikube Ready
+```
+NAME       STATUS   ROLES           AGE
+minikube   Ready    control-plane   30s
+```
 
 ---
 
-## Step 2 - Add Helm Repository
+## Step 2 - Create Monitoring Namespace
 
+```bash
+kubectl create namespace monitoring
+```
+
+Verify:
+
+```bash
+kubectl get namespaces | grep monitoring
+```
+
+Expected:
+
+```
+monitoring   Active   5s
+```
+
+---
+
+## Step 3 - Add Helm Repositories
+
+Add the Prometheus community Helm chart repository:
+
+```bash
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-
 helm repo update
+```
 
 Verify:
 
+```bash
 helm repo list
-
----
-
-## Step 3 - Install Prometheus
-
-helm install prometheus prometheus-community/prometheus
-
-Verify:
-
-kubectl get pods
+```
 
 Expected:
 
-prometheus-server Running
+```
+NAME                    URL
+prometheus-community    https://prometheus-community.github.io/helm-charts
+```
 
 ---
 
-## Step 4 - Install Grafana
+## Step 4 - Install kube-prometheus-stack
 
-helm install grafana prometheus-community/grafana
+> ℹ️ We use `kube-prometheus-stack` — the official combined chart that installs **Prometheus + Grafana + Node Exporter + kube-state-metrics + Alertmanager** together. This is the production standard approach.
 
-Verify:
+```bash
+helm install monitoring prometheus-community/kube-prometheus-stack \
+  --namespace monitoring \
+  --set grafana.adminPassword=admin123
+```
 
-kubectl get pods
+Wait for all pods to be ready (this may take 2-3 minutes):
 
-Expected:
+```bash
+kubectl get pods -n monitoring -w
+```
 
-grafana Running
+Expected — all pods `Running`:
+
+```
+NAME                                                   READY   STATUS
+monitoring-grafana-xxxxxxxxx-xxxxx                     3/3     Running
+monitoring-kube-prometheus-prometheus-0                2/2     Running
+monitoring-kube-state-metrics-xxxxxxxxx-xxxxx          1/1     Running
+monitoring-prometheus-node-exporter-xxxxx              1/1     Running
+```
 
 ---
 
-## Step 5 - Get Grafana Password
+## Step 5 - Verify All Monitoring Components
 
-kubectl get secret grafana -o jsonpath="{.data.admin-password}" | base64 --decode
+```bash
+kubectl get all -n monitoring
+```
 
-Example:
+Check services specifically:
 
-admin123
+```bash
+kubectl get svc -n monitoring
+```
+
+Expected services:
+
+```
+NAME                                      TYPE        CLUSTER-IP     PORT(S)
+monitoring-grafana                        ClusterIP   10.96.xx.xx    80/TCP
+monitoring-kube-prometheus-prometheus     ClusterIP   10.96.xx.xx    9090/TCP
+monitoring-prometheus-node-exporter       ClusterIP   10.96.xx.xx    9100/TCP
+```
 
 ---
 
-## Step 6 - Expose Grafana
+## Step 6 - Access Prometheus UI
 
-kubectl port-forward service/grafana 3000:80
+Forward the Prometheus port to your local machine:
 
-Open:
+```bash
+kubectl port-forward svc/monitoring-kube-prometheus-prometheus -n monitoring 9090:9090
+```
 
+Open in browser:
+
+```
+http://localhost:9090
+```
+
+Try a sample PromQL query — in the Expression field enter:
+
+```
+up
+```
+
+Expected — shows all scrape targets and their status (1 = up, 0 = down).
+
+---
+
+## Step 7 - Access Grafana Dashboard
+
+Open a **new terminal** (keep the Prometheus port-forward running) and run:
+
+```bash
+kubectl port-forward svc/monitoring-grafana -n monitoring 3000:80
+```
+
+Open in browser:
+
+```
 http://localhost:3000
+```
 
-Login:
+Login with:
 
-Username: admin
-
-Password: <password>
-
----
-
-## Step 7 - Import Dashboard
-
-Grafana
-
-↓
-
-Dashboards
-
-↓
-
-Import
-
-Dashboard ID:
-
-1860
-
-(Node Exporter Dashboard)
+| Field | Value |
+|-------|-------|
+| Username | `admin` |
+| Password | `admin123` |
 
 ---
 
-## Step 8 - Generate Load
+## Step 8 - Import the Node Exporter Dashboard
 
-kubectl run nginx --image=nginx
+1. In Grafana, click the **+** icon in the left sidebar
+2. Click **Import**
+3. Enter Dashboard ID: **`1860`** (Node Exporter Full — the most popular K8s dashboard)
+4. Click **Load**
+5. Select **Prometheus** as the data source
+6. Click **Import**
 
-Verify:
+Expected — a full dashboard appears showing:
 
-kubectl get pods
-
----
-
-## Step 9 - Observe Metrics
-
-Open Grafana.
-
-Verify:
-
-- CPU Usage
-- Memory Usage
-- Pod Count
-- Node Health
+```
+CPU Usage      Memory Usage
+Disk I/O       Network Traffic
+Pod Count      Node Health
+```
 
 ---
 
-## Verification
+## Step 9 - Generate Load to Observe Metrics
 
-Verify:
+In a new terminal, run a load-generating pod:
 
-✅ Prometheus Running
+```bash
+kubectl run load-test --image=nginx -n monitoring
+```
 
-✅ Grafana Running
+Wait for it to start:
 
-✅ Dashboards Visible
+```bash
+kubectl get pods -n monitoring -l run=load-test
+```
 
-✅ Metrics Collected
+Observe the CPU and Memory panels in Grafana updating in real time.
 
 ---
 
-## Expected Output
+## Step 10 - Explore PromQL Queries
 
-Grafana Dashboard showing:
+In the Prometheus UI (`http://localhost:9090`), try these queries:
 
-CPU Usage
+```promql
+# CPU usage across all nodes
+100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)
 
-Memory Usage
+# Memory usage
+node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes * 100
 
-Pod Status
+# Running pods count
+count(kube_pod_info)
 
-Cluster Health
+# Pods not running
+count(kube_pod_status_phase{phase!="Running"})
+```
+
+---
+
+## Verification Checklist
+
+✅ Minikube running with `monitoring` namespace created
+
+✅ `kube-prometheus-stack` Helm chart installed successfully
+
+✅ All pods in `monitoring` namespace are `Running`
+
+✅ Prometheus UI accessible at `http://localhost:9090`
+
+✅ `up` query in Prometheus shows all targets
+
+✅ Grafana accessible at `http://localhost:3000`
+
+✅ Dashboard 1860 imported and showing metrics
+
+✅ CPU, memory, pod count metrics visible
+
+---
+
+## Troubleshooting
+
+**Pods stuck in `Pending`:**
+```bash
+kubectl describe pod <POD_NAME> -n monitoring
+```
+Minikube may need more resources. Restart with more memory:
+```bash
+minikube stop
+minikube start --memory=4096 --cpus=2
+```
+
+**Grafana shows "No data":**
+- Confirm Prometheus is selected as the data source in the dashboard
+- Go to: Connections → Data Sources → Prometheus → Test
+
+**Port-forward drops:**
+Port-forwards disconnect if idle. Re-run the `kubectl port-forward` command.
 
 ---
 
 ## Cleanup
 
-helm uninstall prometheus
-
-helm uninstall grafana
-
-Stop Cluster:
-
+```bash
+helm uninstall monitoring -n monitoring
+kubectl delete namespace monitoring
 minikube stop
+```
+
+---
+
+## Production Notes
+
+> **1. Use Persistent Storage for Prometheus**
+> By default, Prometheus data is lost when the pod restarts. In production, configure a `PersistentVolumeClaim`:
+> ```bash
+> helm install monitoring prometheus-community/kube-prometheus-stack \
+>   --namespace monitoring \
+>   --set prometheus.prometheusSpec.storageSpec.volumeClaimTemplate.spec.resources.requests.storage=10Gi
+> ```
+
+> **2. Configure Alertmanager**
+> `kube-prometheus-stack` includes Alertmanager. Configure it to send alerts to Slack, PagerDuty, or email when CPU > 80%, pods are crashing, or nodes are unreachable.
+
+> **3. Use Grafana Cloud for Production Dashboards**
+> Instead of self-hosting Grafana, use [Grafana Cloud](https://grafana.com/products/cloud/) (free tier available) with remote write from Prometheus.
+
+> **4. Set Resource Requests/Limits on Prometheus**
+> Prometheus is memory-intensive. Always set resource limits in production.
 
 ---
 
 ## Key Learnings
 
-- Prometheus
-- Grafana
-- Helm
-- Metrics
-- Monitoring
-- Observability
-- Dashboards
+- Helm (package manager for Kubernetes)
+- `kube-prometheus-stack` (Prometheus + Grafana + Node Exporter + Alertmanager)
+- Kubernetes Namespaces for monitoring isolation
+- Prometheus metrics scraping (Node Exporter, kube-state-metrics)
+- PromQL queries (rate, avg, count, label filtering)
+- Grafana dashboard import (Dashboard ID 1860)
+- `kubectl port-forward` for local service access
+- Alertmanager for production alerting
+- PersistentVolumeClaims for metrics storage

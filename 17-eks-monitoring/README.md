@@ -2,237 +2,324 @@
 
 ## Problem Statement
 
-Your company has applications running on Amazon EKS.
+Your company runs production workloads on Amazon EKS with no observability.
 
 Current Problems:
 
-- No visibility into cluster health
-- No CPU and Memory monitoring
-- No application dashboards
-- No performance insights
+- No visibility into node CPU or memory pressure
+- No dashboards for the operations team
+- No alerting when pods crash or nodes are unhealthy
+- Can't correlate application issues with cluster resource usage
 
-Build a monitoring platform using Prometheus and Grafana.
+Build a production monitoring platform on EKS using the `kube-prometheus-stack` Helm chart.
 
 ---
 
-# Architecture
+## Architecture
 
-Amazon EKS
-      │
-      ▼
-Prometheus
-      │
-      ▼
-Metrics Collection
-      │
-      ▼
+```
+Amazon EKS Cluster
+       │
+       ├── Node Exporter (DaemonSet — 1 per node)
+       │     └── Collects: CPU, memory, disk, network per node
+       ├── kube-state-metrics
+       │     └── Collects: pod/deployment/node state metrics
+       │
+       ▼
+Prometheus Server
+(Stores metrics with time-series database)
+       │
+       ▼
 Grafana
-      │
-      ▼
-Dashboards
+(Visualises metrics — dashboards, alerts)
+       │
+       ▼ kubectl port-forward
+Browser → http://localhost:3000
+
+All resources in namespace: monitoring
+```
 
 ---
 
-# Prerequisites
+## Project Structure
 
-- AWS Account
-- EKS Cluster Running
-- kubectl Installed
-- Helm Installed
+```
+17-eks-monitoring/
+├── README.md
+└── Resume-Points.md
+    (No YAML files needed — everything deployed via Helm)
+```
 
 ---
 
-# Step 1 - Configure kubectl
+## Prerequisites
 
-aws eks update-kubeconfig --region ap-south-1 --name devops-cluster
+- Amazon EKS cluster running and kubectl configured (from Project 15)
+- Helm installed → [Install Helm](https://helm.sh/docs/intro/install/)
 
 Verify:
 
+```bash
 kubectl get nodes
+helm version
+```
+
+---
+
+## Step 1 - Configure kubectl for EKS
+
+```bash
+aws eks update-kubeconfig --region ap-south-1 --name devops-cluster
+```
+
+Verify nodes are ready:
+
+```bash
+kubectl get nodes
+```
 
 Expected:
 
-Worker Nodes Ready
+```
+NAME                                       STATUS   ROLES    AGE
+ip-10-0-3-xx.ap-south-1.compute.internal  Ready    <none>   10m
+ip-10-0-4-xx.ap-south-1.compute.internal  Ready    <none>   10m
+```
 
 ---
 
-# Step 2 - Add Helm Repository
+## Step 2 - Create Monitoring Namespace
 
-helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-
-helm repo update
-
-Verify:
-
-helm repo list
-
----
-
-# Step 3 - Create Monitoring Namespace
-
+```bash
 kubectl create namespace monitoring
-
-Verify:
-
-kubectl get ns
+```
 
 ---
 
-# Step 4 - Install Prometheus
+## Step 3 - Add the Prometheus Community Helm Repository
 
-helm install prometheus prometheus-community/prometheus -n monitoring
+```bash
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo update
+```
 
 Verify:
 
-kubectl get pods -n monitoring
+```bash
+helm repo list
+```
+
+---
+
+## Step 4 - Install kube-prometheus-stack
+
+> ℹ️ `kube-prometheus-stack` is the production-standard chart — it installs Prometheus, Grafana, Node Exporter, kube-state-metrics, and Alertmanager in one command.
+
+```bash
+helm install monitoring prometheus-community/kube-prometheus-stack \
+  --namespace monitoring \
+  --set grafana.adminPassword=admin123 \
+  --set prometheus.prometheusSpec.retention=7d
+```
+
+Wait for all pods to be ready (2–3 minutes):
+
+```bash
+kubectl get pods -n monitoring -w
+```
 
 Expected:
 
-prometheus-server Running
+```
+NAME                                                   READY   STATUS
+monitoring-grafana-xxxxxxxxx-xxxxx                     3/3     Running
+monitoring-kube-prometheus-prometheus-0                2/2     Running
+monitoring-kube-state-metrics-xxxxxxxxx-xxxxx          1/1     Running
+monitoring-prometheus-node-exporter-xxxxx              1/1     Running  ← one per node
+monitoring-prometheus-node-exporter-yyyyy              1/1     Running  ← one per node
+```
 
 ---
 
-# Step 5 - Install Grafana
+## Step 5 - Verify All Monitoring Services
 
-helm install grafana prometheus-community/grafana -n monitoring
-
-Verify:
-
-kubectl get pods -n monitoring
+```bash
+kubectl get svc -n monitoring
+```
 
 Expected:
 
-grafana Running
+```
+NAME                                          TYPE        PORT(S)
+monitoring-grafana                            ClusterIP   80/TCP
+monitoring-kube-prometheus-prometheus         ClusterIP   9090/TCP
+monitoring-prometheus-node-exporter           ClusterIP   9100/TCP
+```
 
 ---
 
-# Step 6 - Get Grafana Password
+## Step 6 - Access Prometheus UI
 
-kubectl get secret grafana -n monitoring -o jsonpath="{.data.admin-password}" | base64 --decode
+```bash
+kubectl port-forward svc/monitoring-kube-prometheus-prometheus -n monitoring 9090:9090
+```
 
-Example:
+Open: `http://localhost:9090`
 
-admin123
+Run a test PromQL query:
+
+```promql
+up
+```
+
+Expected — all scrape targets showing `1` (up).
 
 ---
 
-# Step 7 - Access Grafana
+## Step 7 - Access Grafana
 
-kubectl port-forward service/grafana 3000:80 -n monitoring
+Open a **new terminal** and run:
 
-Open:
+```bash
+kubectl port-forward svc/monitoring-grafana -n monitoring 3000:80
+```
 
-http://localhost:3000
+Open: `http://localhost:3000`
 
 Login:
 
-Username: admin
-
-Password: generated-password
-
----
-
-# Step 8 - Configure Prometheus Data Source
-
-Grafana
-
-↓
-
-Connections
-
-↓
-
-Data Sources
-
-↓
-
-Prometheus
-
-URL:
-
-http://prometheus-server.monitoring.svc.cluster.local
-
-Save & Test.
+| Field | Value |
+|-------|-------|
+| Username | `admin` |
+| Password | `admin123` |
 
 ---
 
-# Step 9 - Import Dashboard
+## Step 8 - Import Node Exporter Dashboard
 
-Dashboard ID:
+1. Click **+** → **Import**
+2. Enter Dashboard ID: **`1860`** (Node Exporter Full)
+3. Click **Load**
+4. Select **Prometheus** as data source
+5. Click **Import**
 
-1860
+Expected — dashboard shows real EKS node metrics:
 
-Node Exporter Dashboard
-
-Import.
-
----
-
-# Step 10 - Deploy Sample Application
-
-kubectl create deployment nginx --image=nginx
-
-kubectl scale deployment nginx --replicas=5
-
----
-
-# Step 11 - Observe Metrics
-
-Verify in Grafana:
-
-- CPU Usage
-- Memory Usage
-- Node Health
-- Pod Health
-- Network Usage
+```
+CPU Usage per Node
+Memory Usage per Node
+Disk I/O
+Network Traffic
+Pod Count
+```
 
 ---
 
-# Verification
+## Step 9 - Write PromQL Queries for EKS
 
-Verify:
+In Prometheus UI (`http://localhost:9090`), try:
 
-✅ EKS Running
+```promql
+# CPU usage rate per node
+100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)
 
-✅ Prometheus Running
+# Memory available
+node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes * 100
 
-✅ Grafana Running
+# Count running pods across all namespaces
+count(kube_pod_info{pod_phase="Running"})
 
-✅ Dashboards Working
+# Pods NOT in Running state (alerts candidate)
+count(kube_pod_status_phase{phase!="Running"})
 
-✅ Metrics Visible
-
----
-
-# Expected Output
-
-CPU Usage
-
-Memory Usage
-
-Node Health
-
-Pod Status
+# Node disk pressure
+kube_node_status_condition{condition="DiskPressure", status="true"}
+```
 
 ---
 
-# Cleanup
+## Step 10 - Deploy a Sample Application and Observe
 
-helm uninstall prometheus -n monitoring
+Deploy a workload to generate metrics:
 
-helm uninstall grafana -n monitoring
+```bash
+kubectl create deployment nginx --image=nginx:1.27 --replicas=5
+```
 
+Watch the pod count metric update in Grafana in real time.
+
+---
+
+## Verification Checklist
+
+✅ EKS nodes `Ready`
+
+✅ `kube-prometheus-stack` installed — all pods `Running`
+
+✅ One Node Exporter pod per worker node (DaemonSet)
+
+✅ Prometheus UI accessible — `up` query shows all targets
+
+✅ Grafana accessible at `http://localhost:3000`
+
+✅ Dashboard 1860 imported — showing real node metrics
+
+✅ CPU, memory, disk, network metrics visible per EKS node
+
+---
+
+## Troubleshooting
+
+**Node Exporter only shows 1 pod (expected 2):**
+- Node Exporter is a DaemonSet — one pod per node. Check: `kubectl get daemonset -n monitoring`
+
+**Grafana "No data" on dashboard panels:**
+- Confirm Prometheus is the data source: Connections → Data Sources → Prometheus → Test
+- Check Prometheus URL: `http://monitoring-kube-prometheus-prometheus.monitoring.svc.cluster.local:9090`
+
+**Port-forward disconnects:**
+- This is normal for idle connections. Re-run the `kubectl port-forward` command.
+
+---
+
+## Cleanup
+
+```bash
+helm uninstall monitoring -n monitoring
 kubectl delete namespace monitoring
+```
 
 ---
 
-# Key Learnings
+## Production Notes
 
-- Amazon EKS
-- Prometheus
-- Grafana
-- Monitoring
-- Observability
-- Dashboards
-- Helm
-- Kubernetes Metrics
+> **1. Use Persistent Storage for Prometheus on EKS**
+> By default, metrics are lost when Prometheus restarts. Add an EBS-backed PVC:
+> ```bash
+> helm install monitoring prometheus-community/kube-prometheus-stack \
+>   --namespace monitoring \
+>   --set prometheus.prometheusSpec.storageSpec.volumeClaimTemplate.spec.storageClassName=gp2 \
+>   --set prometheus.prometheusSpec.storageSpec.volumeClaimTemplate.spec.resources.requests.storage=20Gi
+> ```
+
+> **2. Configure Alertmanager for EKS Alerts**
+> Create PrometheusRule resources for: node CPU > 80%, pod CrashLoopBackOff, disk pressure, and memory pressure. Route alerts to Slack or PagerDuty via Alertmanager.
+
+> **3. Use Amazon Managed Prometheus (AMP) for Production**
+> Replace self-hosted Prometheus with Amazon Managed Prometheus — no capacity planning, HA built-in, and integrates with Amazon Managed Grafana.
+
+---
+
+## Key Learnings
+
+- `kube-prometheus-stack` on Amazon EKS
+- Node Exporter DaemonSet (one pod per node)
+- kube-state-metrics (Kubernetes object state)
+- PromQL queries for EKS cluster health
+- Prometheus retention configuration (`--set prometheus.prometheusSpec.retention=7d`)
+- Grafana Dashboard 1860 (Node Exporter Full)
+- `kubectl port-forward` for accessing cluster-internal services
+- EBS-backed PersistentVolumeClaims for Prometheus on EKS
+- PrometheusRule CRDs for alert configuration
+- Alertmanager (Slack/PagerDuty integration)
+- Amazon Managed Prometheus + Grafana (production alternative)

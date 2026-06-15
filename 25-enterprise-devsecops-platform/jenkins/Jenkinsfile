@@ -1,13 +1,173 @@
-Checkout
-↓
-SonarQube Scan
-↓
-Quality Gate
-↓
-Docker Build
-↓
-Trivy Scan
-↓
-Push To Nexus
-↓
-Update GitOps Repo
+pipeline {
+
+  agent any
+
+  environment {
+    // ── Nexus Registry ──────────────────────────────────
+    NEXUS_REGISTRY    = "${NEXUS_HOST}:8082"
+    IMAGE_NAME        = "enterprise-app"
+    IMAGE_TAG         = "${GIT_COMMIT[0..7]}"
+    FULL_IMAGE        = "${NEXUS_REGISTRY}/enterprise-app:${IMAGE_TAG}"
+
+    // ── Kubernetes ───────────────────────────────────────
+    NAMESPACE         = "enterprise-devsecops"
+    GITOPS_REPO_URL   = "https://github.com/YOUR_ORG/enterprise-gitops-manifests.git"
+    GITOPS_MANIFEST   = "kubernetes/deployment.yaml"
+
+    // ── Notifications ────────────────────────────────────
+    SLACK_CHANNEL     = "#devsecops-alerts"
+  }
+
+  options {
+    buildDiscarder(logRotator(numToKeepStr: '10'))
+    timeout(time: 30, unit: 'MINUTES')
+    disableConcurrentBuilds()
+  }
+
+  stages {
+
+    // ══════════════════════════════════════════════════════
+    // Stage 1 — Checkout
+    // ══════════════════════════════════════════════════════
+    stage('Checkout') {
+      steps {
+        checkout scm
+        echo "✅ Checked out branch: ${env.BRANCH_NAME} | commit: ${IMAGE_TAG}"
+      }
+    }
+
+    // ══════════════════════════════════════════════════════
+    // Stage 2 — Static Code Analysis (SonarQube)
+    // ══════════════════════════════════════════════════════
+    stage('SonarQube Analysis') {
+      steps {
+        withSonarQubeEnv('SonarQube') {
+          sh 'sonar-scanner'
+        }
+      }
+    }
+
+    // ══════════════════════════════════════════════════════
+    // Stage 3 — Quality Gate (blocks pipeline if code fails)
+    // ══════════════════════════════════════════════════════
+    stage('Quality Gate') {
+      steps {
+        timeout(time: 5, unit: 'MINUTES') {
+          waitForQualityGate abortPipeline: true
+        }
+      }
+    }
+
+    // ══════════════════════════════════════════════════════
+    // Stage 4 — Build Docker Image
+    // ══════════════════════════════════════════════════════
+    stage('Docker Build') {
+      steps {
+        sh """
+          docker build \
+            --build-arg APP_VERSION=${IMAGE_TAG} \
+            -t ${FULL_IMAGE} \
+            -t ${NEXUS_REGISTRY}/${IMAGE_NAME}:latest \
+            application/
+        """
+        echo "✅ Docker image built: ${FULL_IMAGE}"
+      }
+    }
+
+    // ══════════════════════════════════════════════════════
+    // Stage 5 — Security Scan (Trivy) — blocks on HIGH/CRITICAL
+    // ══════════════════════════════════════════════════════
+    stage('Trivy Security Scan') {
+      steps {
+        sh """
+          trivy image \
+            --exit-code 1 \
+            --ignore-unfixed \
+            --severity HIGH,CRITICAL \
+            --format table \
+            --output trivy-report-${IMAGE_TAG}.txt \
+            ${FULL_IMAGE}
+        """
+        echo "✅ Trivy scan passed — no HIGH/CRITICAL unpatched CVEs"
+      }
+      post {
+        always {
+          archiveArtifacts(
+            artifacts: "trivy-report-${IMAGE_TAG}.txt",
+            allowEmptyArchive: true
+          )
+        }
+      }
+    }
+
+    // ══════════════════════════════════════════════════════
+    // Stage 6 — Push to Nexus (only after security scan passes)
+    // ══════════════════════════════════════════════════════
+    stage('Push to Nexus Registry') {
+      steps {
+        withCredentials([usernamePassword(
+          credentialsId: 'nexus-credentials',
+          usernameVariable: 'NEXUS_USER',
+          passwordVariable: 'NEXUS_PASS'
+        )]) {
+          sh "echo ${NEXUS_PASS} | docker login ${NEXUS_REGISTRY} -u ${NEXUS_USER} --password-stdin"
+          sh "docker push ${FULL_IMAGE}"
+          sh "docker push ${NEXUS_REGISTRY}/${IMAGE_NAME}:latest"
+          echo "✅ Image pushed to Nexus: ${FULL_IMAGE}"
+        }
+      }
+    }
+
+    // ══════════════════════════════════════════════════════
+    // Stage 7 — GitOps Manifest Update (ArgoCD picks this up)
+    // ══════════════════════════════════════════════════════
+    stage('Update GitOps Manifest') {
+      when {
+        branch 'main'
+      }
+      steps {
+        withCredentials([usernamePassword(
+          credentialsId: 'github-credentials',
+          usernameVariable: 'GIT_USER',
+          passwordVariable: 'GIT_TOKEN'
+        )]) {
+          sh """
+            rm -rf /tmp/enterprise-gitops
+            git clone https://${GIT_USER}:${GIT_TOKEN}@github.com/YOUR_ORG/enterprise-gitops-manifests.git /tmp/enterprise-gitops
+
+            # Update image tag in deployment manifest
+            sed -i 's|image: ${NEXUS_REGISTRY}/${IMAGE_NAME}:.*|image: ${NEXUS_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}|' \
+              /tmp/enterprise-gitops/${GITOPS_MANIFEST}
+
+            cd /tmp/enterprise-gitops
+            git config user.email "jenkins@enterprise-ci.local"
+            git config user.name "Jenkins Enterprise CI"
+            git add ${GITOPS_MANIFEST}
+            git commit -m "ci: deploy ${IMAGE_NAME}:${IMAGE_TAG} [skip ci]"
+            git push
+          """
+        }
+        echo "✅ GitOps manifest updated — ArgoCD will sync to EKS"
+      }
+    }
+  }
+
+  // ══════════════════════════════════════════════════════
+  // Post — Notifications + Cleanup
+  // ══════════════════════════════════════════════════════
+  post {
+    success {
+      echo "✅ Enterprise DevSecOps pipeline PASSED"
+      echo "   Image: ${FULL_IMAGE}"
+      echo "   Branch: ${env.BRANCH_NAME} | Build: ${env.BUILD_NUMBER}"
+    }
+    failure {
+      echo "❌ Enterprise DevSecOps pipeline FAILED at stage: ${env.STAGE_NAME}"
+      echo "   Branch: ${env.BRANCH_NAME} | Build: ${env.BUILD_NUMBER}"
+    }
+    always {
+      sh "docker logout ${NEXUS_REGISTRY} || true"
+      cleanWs()
+    }
+  }
+}

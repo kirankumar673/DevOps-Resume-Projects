@@ -2,18 +2,63 @@ pipeline {
 
   agent any
 
+  environment {
+    NEXUS_REGISTRY = "${NEXUS_HOST}:8082"
+    IMAGE_NAME     = "nexus-app"
+    IMAGE_TAG      = "${GIT_COMMIT[0..7]}"
+    NAMESPACE      = "nexus-cicd"
+  }
+
   stages {
 
-    stage('Build') {
+    stage('Checkout') {
       steps {
-        sh 'docker build -t nexus-app .'
+        checkout scm
       }
     }
 
-    stage('Push To Nexus') {
+    stage('Build Docker Image') {
       steps {
-        sh 'docker push EC2-IP:8082/nexus-app:v1'
+        sh "docker build -t ${NEXUS_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG} ."
+        sh "docker tag ${NEXUS_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG} ${NEXUS_REGISTRY}/${IMAGE_NAME}:latest"
       }
+    }
+
+    stage('Push to Nexus Registry') {
+      steps {
+        withCredentials([usernamePassword(
+          credentialsId: 'nexus-credentials',
+          usernameVariable: 'NEXUS_USER',
+          passwordVariable: 'NEXUS_PASS'
+        )]) {
+          sh "echo ${NEXUS_PASS} | docker login ${NEXUS_REGISTRY} -u ${NEXUS_USER} --password-stdin"
+          sh "docker push ${NEXUS_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
+          sh "docker push ${NEXUS_REGISTRY}/${IMAGE_NAME}:latest"
+          echo "✅ Image pushed to Nexus: ${NEXUS_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
+        }
+      }
+    }
+
+    stage('Deploy to Kubernetes') {
+      steps {
+        sh "kubectl create namespace ${NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -"
+        sh "kubectl apply -f deployment.yaml -n ${NAMESPACE}"
+        sh "kubectl apply -f service.yaml -n ${NAMESPACE}"
+        sh "kubectl set image deployment/nexus-app nexus-app=${NEXUS_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG} -n ${NAMESPACE}"
+        sh "kubectl rollout status deployment/nexus-app -n ${NAMESPACE} --timeout=120s"
+      }
+    }
+  }
+
+  post {
+    success {
+      echo "✅ Pipeline complete — ${NEXUS_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG} deployed"
+    }
+    failure {
+      echo "❌ Pipeline failed — check Nexus connectivity or deployment logs"
+    }
+    always {
+      sh "docker logout ${NEXUS_REGISTRY} || true"
     }
   }
 }

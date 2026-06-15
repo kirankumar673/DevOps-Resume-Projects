@@ -1,1 +1,112 @@
-Architecture placeholder
+ENTERPRISE DEVSECOPS PLATFORM — FULL ARCHITECTURE
+===================================================
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         DEVELOPER WORKFLOW                              │
+│                                                                         │
+│   Developer  ──git push──▶  GitHub Repository                          │
+│                                  │                                      │
+│                                  ▼ webhook trigger                      │
+│                            Jenkins CI Server                            │
+│                           (EC2 — public subnet)                         │
+└──────────────────────────────────┬──────────────────────────────────────┘
+                                   │
+                    ┌──────────────▼──────────────┐
+                    │     CI PIPELINE STAGES       │
+                    │                             │
+                    │  1. Checkout (git SHA tag)  │
+                    │         │                   │
+                    │  2. SonarQube Scan          │──▶ SonarQube Server
+                    │         │                   │    (code quality)
+                    │  3. Quality Gate ✅/❌       │
+                    │         │                   │
+                    │  4. Docker Build            │
+                    │    (--build-arg VERSION)    │
+                    │         │                   │
+                    │  5. Trivy Security Scan ✅/❌│──▶ Trivy Report
+                    │    (HIGH/CRITICAL CVEs)     │    (archived artifact)
+                    │         │                   │
+                    │  6. Push to Nexus Registry  │──▶ Nexus Repository
+                    │    (EC2_IP:8082/app:SHA)    │    (private registry)
+                    │         │                   │
+                    │  7. Update GitOps Manifest  │──▶ GitHub GitOps Repo
+                    │    (sed image tag + commit) │    (deployment.yaml)
+                    └─────────────────────────────┘
+                                   │
+                    ┌──────────────▼──────────────┐
+                    │         GITOPS (CD)          │
+                    │                             │
+                    │      ArgoCD on EKS          │
+                    │   (watches GitOps repo)     │
+                    │                             │
+                    │   Git state != Live state   │
+                    │          ▼                  │
+                    │   Auto-sync + Self-heal      │
+                    └──────────────┬──────────────┘
+                                   │
+┌──────────────────────────────────▼──────────────────────────────────────┐
+│                     AMAZON EKS CLUSTER                                  │
+│                                                                         │
+│   Namespace: enterprise-devsecops                                       │
+│   ┌───────────────────────────────────────────────────────┐            │
+│   │  Deployment: enterprise-app (2 replicas)              │            │
+│   │  - livenessProbe  /health                             │            │
+│   │  - readinessProbe /ready                              │            │
+│   │  - resources: cpu 100m-500m, memory 128Mi-512Mi       │            │
+│   │  - rollingUpdate: maxSurge=1, maxUnavailable=0        │            │
+│   └───────────────────────────────────────────────────────┘            │
+│   ┌───────────────────────────────────────────────────────┐            │
+│   │  Service: enterprise-service (ClusterIP:80→5000)      │            │
+│   └───────────────────────────────────────────────────────┘            │
+│   ┌───────────────────────────────────────────────────────┐            │
+│   │  Ingress: enterprise-ingress                          │            │
+│   │  - ingressClassName: nginx                            │            │
+│   │  - TLS: cert-manager (Let's Encrypt)                  │            │
+│   │  - host: enterprise-app.yourdomain.com                │            │
+│   └───────────────────────────────────────────────────────┘            │
+│                                                                         │
+│   Namespace: monitoring                                                 │
+│   - Prometheus (kube-prometheus-stack, 7d retention, EBS PVC)          │
+│   - Grafana (Dashboard 1860 + 315)                                     │
+│   - Node Exporter DaemonSet                                            │
+│   - kube-state-metrics                                                 │
+│   - Alertmanager                                                        │
+│                                                                         │
+│   Namespace: logging                                                    │
+│   - Elasticsearch (1 replica, gp2 PVC)                                 │
+│   - Kibana (filebeat-* index pattern)                                   │
+│   - Filebeat DaemonSet (reads /var/log/containers/*)                   │
+│                                                                         │
+│   Namespace: argocd                                                     │
+│   - ArgoCD (auto-sync, selfHeal, prune)                                │
+└──────────────────────────────────────────────────────────────────────────┘
+
+AWS NETWORK ARCHITECTURE
+=========================
+
+VPC: 10.0.0.0/16
+├── Public Subnets (10.0.1/2.0/24) — AZ a, b
+│     ├── Application Load Balancer (HTTPS entry point)
+│     ├── NAT Gateway (outbound for private subnets)
+│     └── Jenkins EC2 (CI server)
+│
+└── Private Subnets (10.0.3/4.0/24) — AZ a, b
+      └── EKS Worker Nodes (t3.medium × 2, min 1, max 4)
+
+SECURITY GROUPS
+===============
+alb-sg        → 80, 443 from 0.0.0.0/0
+eks-nodes-sg  → all from alb-sg + self (node-to-node)
+jenkins-sg    → 8080, 22 from admin IP only
+
+TERRAFORM MODULES
+=================
+terraform/
+├── main.tf           ← root (wires all modules)
+├── variables.tf      ← all typed variables
+├── outputs.tf        ← cluster/ALB/VPC outputs
+├── terraform.tfvars  ← environment values
+├── vpc/main.tf       ← VPC + subnets + IGW + NAT + route tables
+├── security-groups/  ← ALB + EKS nodes + Jenkins SGs
+├── eks/main.tf       ← IAM roles + EKS cluster + node group
+└── alb/main.tf       ← ALB + target group + listener

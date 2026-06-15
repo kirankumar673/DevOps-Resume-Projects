@@ -2,36 +2,77 @@ pipeline {
 
   agent any
 
+  environment {
+    DOCKER_IMAGE = "${DOCKER_USERNAME}/python-app"
+    IMAGE_TAG    = "${GIT_COMMIT[0..7]}"
+    NAMESPACE    = "sonarqube-cicd"
+  }
+
   stages {
 
     stage('Checkout') {
       steps {
-        git 'https://github.com/USERNAME/repo.git'
+        checkout scm
       }
     }
 
     stage('SonarQube Scan') {
       steps {
-        sh 'sonar-scanner'
+        withSonarQubeEnv('SonarQube') {  // 'SonarQube' matches Jenkins system config name
+          sh 'sonar-scanner'
+        }
       }
     }
 
     stage('Quality Gate') {
       steps {
-        waitForQualityGate abortPipeline: true
+        timeout(time: 5, unit: 'MINUTES') {
+          waitForQualityGate abortPipeline: true
+        }
       }
     }
 
     stage('Docker Build') {
       steps {
-        sh 'docker build -t python-app .'
+        sh "docker build -t ${DOCKER_IMAGE}:${IMAGE_TAG} ."
+        sh "docker tag ${DOCKER_IMAGE}:${IMAGE_TAG} ${DOCKER_IMAGE}:latest"
       }
     }
 
-    stage('Deploy') {
+    stage('Docker Push') {
       steps {
-        sh 'kubectl apply -f deployment.yaml'
+        withCredentials([usernamePassword(
+          credentialsId: 'dockerhub-credentials',
+          usernameVariable: 'DOCKER_USERNAME',
+          passwordVariable: 'DOCKER_PASSWORD'
+        )]) {
+          sh 'echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin'
+          sh "docker push ${DOCKER_IMAGE}:${IMAGE_TAG}"
+          sh "docker push ${DOCKER_IMAGE}:latest"
+        }
       }
+    }
+
+    stage('Deploy to Kubernetes') {
+      steps {
+        sh "kubectl create namespace ${NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -"
+        sh "kubectl apply -f deployment.yaml -n ${NAMESPACE}"
+        sh "kubectl apply -f service.yaml -n ${NAMESPACE}"
+        sh "kubectl set image deployment/python-app python-app=${DOCKER_IMAGE}:${IMAGE_TAG} -n ${NAMESPACE}"
+        sh "kubectl rollout status deployment/python-app -n ${NAMESPACE} --timeout=120s"
+      }
+    }
+  }
+
+  post {
+    success {
+      echo "✅ Quality Gate passed — ${DOCKER_IMAGE}:${IMAGE_TAG} deployed"
+    }
+    failure {
+      echo "❌ Pipeline failed — Quality Gate or deployment issue"
+    }
+    always {
+      sh 'docker logout'
     }
   }
 }

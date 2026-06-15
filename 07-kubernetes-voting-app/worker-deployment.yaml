@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: worker
+  namespace: voting-app
 spec:
   replicas: 1
   selector:
@@ -15,3 +16,10 @@ spec:
       containers:
       - name: worker
         image: dockersamples/examplevotingapp_worker
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "250m"
+            memory: "256Mi"

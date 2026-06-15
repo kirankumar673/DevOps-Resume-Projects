@@ -3,6 +3,7 @@ kind: Service
 
 metadata:
   name: nginx-service
+  namespace: eks-argocd-demo
 
 spec:
   selector:

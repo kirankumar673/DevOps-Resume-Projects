@@ -3,6 +3,7 @@ kind: Service
 
 metadata:
   name: python-app-service
+  namespace: cicd-demo
 
 spec:
   selector:

@@ -2,9 +2,14 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: app-ingress
+  namespace: ingress-demo
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
+  ingressClassName: nginx
   rules:
-  - http:
+  - host: demo.local   # Replace with your real domain or use minikube ip for local testing
+    http:
       paths:
       - path: /app1
         pathType: Prefix

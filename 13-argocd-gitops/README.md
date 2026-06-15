@@ -2,205 +2,367 @@
 
 ## Problem Statement
 
-Your company deploys applications to Kubernetes manually.
+Your company deploys applications to Kubernetes manually using `kubectl apply`.
 
 Current Problems:
 
-- Manual kubectl apply
-- No deployment history
-- Configuration drift
-- Difficult rollback process
+- Manual `kubectl apply` on every release — inconsistent and error-prone
+- No deployment history or audit trail
+- Configuration drift — live cluster state diverges from what's in Git
+- Difficult rollback process — no clear way to go back to a previous state
+- No automatic detection of unauthorised changes
 
-Build a GitOps solution using ArgoCD.
+Build a GitOps solution using ArgoCD — where Git is the single source of truth and ArgoCD automatically syncs the cluster to match.
 
 ---
 
 ## Architecture
 
+```
 Developer
     │
-    ▼
+    ▼ git push
 GitHub Repository
+(deployment.yaml, service.yaml)
     │
-    ▼
+    ▼ ArgoCD polls every 3 minutes (or webhook)
 ArgoCD
+(running in argocd namespace)
     │
-    ▼
+    ├── Compares: Git state vs Live cluster state
+    │
+    ├── If drift detected → Auto-sync (or manual sync)
+    │
+    └── Applies changes to:
 Kubernetes Cluster
-    │
-    ▼
-Application
+└── Namespace: argocd-demo
+      ├── Deployment: nginx (2 replicas, nginx:1.27)
+      └── Service: nginx (NodePort)
+```
+
+---
+
+## Project Structure
+
+```
+13-argocd-gitops/
+├── deployment.yaml    ← Nginx Deployment (namespace, pinned image, resources, probes)
+└── service.yaml       ← Nginx Service (NodePort, namespace)
+```
+
+> ℹ️ ArgoCD itself is installed via `kubectl apply` from the official manifests. No Helm chart or extra config files needed for this project.
 
 ---
 
 ## Prerequisites
 
-- Kubernetes Cluster
-- Minikube
-- kubectl
-- GitHub Account
+- Minikube installed → [Install Minikube](https://minikube.sigs.k8s.io/docs/start/)
+- kubectl installed → [Install kubectl](https://kubernetes.io/docs/tasks/tools/)
+- GitHub account (to host the manifests repo)
+
+Verify:
+
+```bash
+minikube version
+kubectl version --client
+```
 
 ---
 
-## Step 1 - Create Namespace
+## Step 1 - Start Minikube
 
+```bash
+minikube start
+```
+
+Verify:
+
+```bash
+kubectl get nodes
+```
+
+Expected:
+
+```
+NAME       STATUS   ROLES           AGE
+minikube   Ready    control-plane   30s
+```
+
+---
+
+## Step 2 - Create the ArgoCD Namespace and Install ArgoCD
+
+```bash
 kubectl create namespace argocd
+```
 
----
+Install ArgoCD from the official stable manifest:
 
-## Step 2 - Install ArgoCD
-
+```bash
 kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+```
 
-Verify:
+Wait for all ArgoCD pods to be ready (this takes 2-3 minutes):
 
-kubectl get pods -n argocd
+```bash
+kubectl get pods -n argocd -w
+```
 
-Expected:
+Expected — all pods `Running`:
 
-All ArgoCD Pods Running
+```
+NAME                                                READY   STATUS
+argocd-application-controller-0                     1/1     Running
+argocd-dex-server-xxxxxxxxx-xxxxx                   1/1     Running
+argocd-redis-xxxxxxxxx-xxxxx                        1/1     Running
+argocd-repo-server-xxxxxxxxx-xxxxx                  1/1     Running
+argocd-server-xxxxxxxxx-xxxxx                       1/1     Running
+```
 
 ---
 
-## Step 3 - Expose ArgoCD UI
+## Step 3 - Get the ArgoCD Admin Password
 
+```bash
+kubectl -n argocd get secret argocd-initial-admin-secret \
+  -o jsonpath="{.data.password}" | base64 -d && echo
+```
+
+Save this password — you'll need it to log in to the UI.
+
+---
+
+## Step 4 - Expose ArgoCD UI
+
+```bash
 kubectl port-forward svc/argocd-server -n argocd 8080:443
+```
 
-Open:
+Open in browser:
 
+```
 https://localhost:8080
+```
+
+> ⚠️ Your browser will show a certificate warning — click **Advanced** → **Proceed** (this is expected for local Minikube — the cert is self-signed).
+
+Login with:
+
+| Field | Value |
+|-------|-------|
+| Username | `admin` |
+| Password | (output from Step 3) |
 
 ---
 
-## Step 4 - Get Admin Password
+## Step 5 - Push Manifests to GitHub
 
-kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
+Create a new GitHub repository (e.g., `argocd-demo-manifests`) and push the manifest files:
 
----
+```bash
+git init
+git add deployment.yaml service.yaml
+git commit -m "Initial ArgoCD manifests"
+git branch -M main
+git remote add origin https://github.com/YOUR_USERNAME/argocd-demo-manifests.git
+git push -u origin main
+```
 
-## Step 5 - Create Application Repository
-
-argocd-demo/
-
-├── deployment.yaml
-└── service.yaml
-
----
-
-## Step 6 - Create Deployment
-
-Use deployment.yaml provided in this project.
+> ℹ️ ArgoCD will watch this repository and sync the cluster to match whatever is in it.
 
 ---
 
-## Step 7 - Create Service
+## Step 6 - Create the Application Namespace
 
-Use service.yaml provided in this project.
-
----
-
-## Step 8 - Push to GitHub
-
-git add .
-
-git commit -m "Initial ArgoCD App"
-
-git push
+```bash
+kubectl create namespace argocd-demo
+```
 
 ---
 
-## Step 9 - Create ArgoCD Application
+## Step 7 - Create an ArgoCD Application via the UI
 
-ArgoCD UI
+1. In the ArgoCD UI, click **+ New App**
+2. Fill in the form:
 
-↓
+| Field | Value |
+|-------|-------|
+| Application Name | `nginx-app` |
+| Project | `default` |
+| Sync Policy | `Automatic` (enables auto-sync) |
+| Repository URL | `https://github.com/YOUR_USERNAME/argocd-demo-manifests` |
+| Revision | `HEAD` |
+| Path | `.` (root of the repo) |
+| Cluster URL | `https://kubernetes.default.svc` |
+| Namespace | `argocd-demo` |
 
-New Application
-
-Provide:
-
-Repository URL
-
-Path
-
-Cluster URL
-
-Namespace
+3. Click **Create**
 
 ---
 
-## Step 10 - Sync Application
+## Step 8 - Sync the Application
 
-Click:
+If Sync Policy is set to **Automatic**, ArgoCD will sync within seconds.
 
-SYNC
+If Manual, click **SYNC** → **Synchronize**.
+
+Expected status in the UI:
+
+```
+✅ Healthy
+✅ Synced
+```
+
+---
+
+## Step 9 - Verify Deployment
+
+```bash
+kubectl get all -n argocd-demo
+```
 
 Expected:
 
-Application Healthy
+```
+NAME                         READY   STATUS    RESTARTS
+pod/nginx-xxxxxxxxx-xxxxx    1/1     Running   0
+pod/nginx-xxxxxxxxx-yyyyy    1/1     Running   0
 
-Application Synced
-
----
-
-## Step 11 - Verify Deployment
-
-kubectl get pods
-
-Expected:
-
-nginx pods running
+NAME            TYPE       PORT(S)
+service/nginx   NodePort   80:3xxxx/TCP
+```
 
 ---
 
-## Step 12 - Update Application
+## Step 10 - Test GitOps — Update via Git (Not kubectl)
 
-Change:
+Scale the deployment to 3 replicas **only by editing Git** — not by running kubectl:
 
-replicas: 3
+Edit `deployment.yaml`:
 
-Commit and Push.
+```yaml
+spec:
+  replicas: 3   # Changed from 2
+```
 
-Expected:
+Commit and push:
 
-ArgoCD automatically syncs changes
+```bash
+git add deployment.yaml
+git commit -m "Scale nginx to 3 replicas"
+git push origin main
+```
+
+Watch ArgoCD detect and apply the change automatically:
+
+```bash
+kubectl get pods -n argocd-demo -w
+```
+
+Expected — a third pod appears within seconds:
+
+```
+NAME                         READY   STATUS
+nginx-xxxxxxxxx-xxxxx        1/1     Running
+nginx-xxxxxxxxx-yyyyy        1/1     Running
+nginx-xxxxxxxxx-zzzzz        1/1     Running   ← new pod
+```
+
+> ℹ️ This is the core of GitOps — Git is the source of truth. You never run `kubectl scale` or `kubectl apply` manually.
 
 ---
 
-## Verification
+## Step 11 - Test Drift Detection
 
-Verify:
+Manually change something in the cluster without updating Git (simulates configuration drift):
 
-✅ ArgoCD Running
+```bash
+kubectl scale deployment nginx -n argocd-demo --replicas=1
+```
 
-✅ Repository Connected
+Watch the ArgoCD UI — within 3 minutes it detects the drift and restores the deployment back to 3 replicas automatically.
 
-✅ Application Synced
-
-✅ Auto Deployment Working
+This demonstrates **self-healing** — a key GitOps principle.
 
 ---
 
-## Expected Output
+## Verification Checklist
 
-Healthy
+✅ ArgoCD installed — all pods in `argocd` namespace `Running`
 
-Synced
+✅ ArgoCD UI accessible at `https://localhost:8080`
+
+✅ GitHub repository connected as ArgoCD source
+
+✅ Application shows `Healthy` and `Synced` in ArgoCD UI
+
+✅ Pods running in `argocd-demo` namespace
+
+✅ Git change (replica count) automatically applied to cluster
+
+✅ Manual drift (kubectl scale) automatically corrected by ArgoCD
+
+---
+
+## Troubleshooting
+
+**ArgoCD app shows `OutOfSync`:**
+- Click **SYNC** → **Synchronize** in the UI
+- Check the sync error message for YAML parsing issues
+
+**ArgoCD can't reach GitHub repo:**
+- Ensure the repo is public, or add GitHub credentials in ArgoCD → Settings → Repositories
+
+**Pods in `argocd-demo` not starting:**
+```bash
+kubectl describe pod -n argocd-demo
+kubectl logs -n argocd-demo <POD_NAME>
+```
 
 ---
 
 ## Cleanup
 
+```bash
+# Delete the application namespace
+kubectl delete namespace argocd-demo
+
+# Delete ArgoCD
 kubectl delete namespace argocd
+
+# Stop Minikube
+minikube stop
+```
+
+---
+
+## Production Notes
+
+> **1. Enable Webhook for Instant Sync**
+> By default ArgoCD polls Git every 3 minutes. Configure a GitHub webhook to trigger instant sync on push:
+> GitHub Repo → Settings → Webhooks → Add webhook → `https://your-argocd-server/api/webhook`
+
+> **2. Use App of Apps Pattern**
+> For managing many applications, use the "App of Apps" pattern — one ArgoCD Application manages a directory of other Application manifests.
+
+> **3. Use ArgoCD Image Updater**
+> Automatically update image tags in Git when a new Docker image is pushed to the registry — fully automating the GitOps flow from CI (build) to CD (deploy).
+
+> **4. RBAC and SSO**
+> In production, configure ArgoCD RBAC policies and integrate with your identity provider (Okta, GitHub SSO) instead of the `admin` password.
 
 ---
 
 ## Key Learnings
 
-- GitOps
-- ArgoCD
-- Continuous Delivery
-- Kubernetes
-- Deployment Automation
-- Rollbacks
-- Drift Detection
+- GitOps principles (Git as single source of truth)
+- ArgoCD installation from official manifests
+- ArgoCD Application creation (repo, path, namespace, sync policy)
+- Automatic sync vs manual sync
+- Drift detection and self-healing (ArgoCD restores cluster to Git state)
+- GitHub webhook for instant sync (production pattern)
+- `kubectl port-forward` for accessing ArgoCD UI
+- ArgoCD admin secret decoding (`base64 -d`)
+- App of Apps pattern (managing multiple apps)
+- ArgoCD Image Updater (automated image tag updates)
+- RBAC + SSO integration (production security)

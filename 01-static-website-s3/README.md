@@ -6,228 +6,323 @@ Your company wants to host a marketing website.
 
 Requirements:
 
-- No servers
+- No servers to manage
 - Low cost
 - High availability
 - Publicly accessible
 
-Build a solution using AWS S3.
+Build a solution using AWS S3 Static Website Hosting.
 
 ---
 
 ## Architecture
 
-User
-  │
-  ▼
-Amazon S3
-  │
-  ▼
-Static Website
+```
+User (Browser)
+      │
+      ▼ HTTP
+Amazon S3 Bucket
+(Static Website Hosting enabled)
+      │
+      ▼
+index.html + style.css
+```
+
+> ⚠️ **Production upgrade path:** For HTTPS, add CloudFront + ACM in front of S3. See Production Notes at the bottom.
+
+---
+
+## Project Structure
+
+```
+01-static-website-s3/
+├── policies/
+│   └── bucket-policy.json     ← S3 bucket policy for public read access
+└── source-code/
+    ├── index.html
+    └── style.css
+```
 
 ---
 
 ## Prerequisites
 
-- AWS Account
-- HTML File
-- CSS File
+- AWS Account → [Sign up free](https://aws.amazon.com/free/)
+- A browser
+- No servers, no CLI needed — everything done in the AWS Console
 
 ---
 
-## Step 1 - Create Website Files
+## Step 1 - Review the Website Files
 
-### index.html
+### source-code/index.html
 
+```html
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>Tech With Sandesh</title>
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tech With Sandesh</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1>Welcome to My Website</h1>
-<p>Hosted on AWS S3</p>
+  <h1>Welcome to My Website</h1>
+  <p>Hosted on AWS S3</p>
 </body>
 </html>
+```
 
-### style.css
+### source-code/style.css
 
+```css
 body {
-  text-align:center;
-  margin-top:100px;
-  font-family:Arial;
+  text-align: center;
+  margin-top: 100px;
+  font-family: Arial, sans-serif;
 }
+```
+
+### policies/bucket-policy.json
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": "*",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::YOUR-BUCKET-NAME/*"
+    }
+  ]
+}
+```
+
+> ⚠️ Replace `YOUR-BUCKET-NAME` with your actual S3 bucket name before applying.
 
 ---
 
-## Step 2 - Create S3 Bucket
+## Step 2 - Create an S3 Bucket
 
-AWS Console
+1. Log in to [AWS Console](https://console.aws.amazon.com)
+2. Search for **S3** and click it
+3. Click **Create bucket**
+4. Fill in:
 
-↓
+| Field | Value |
+|-------|-------|
+| Bucket name | `techwithsandesh-website` (must be globally unique) |
+| AWS Region | `ap-south-1` (or your preferred region) |
 
-S3
+5. Leave all other settings as default
+6. Click **Create bucket**
 
-↓
+Expected — bucket appears in the S3 list:
 
-Create Bucket
-
-Bucket Name:
-
-techwithsandesh-website
-
-Region:
-
-ap-south-1
-
-Click:
-
-Create Bucket
+```
+techwithsandesh-website   ap-south-1   ...
+```
 
 ---
 
 ## Step 3 - Disable Public Access Block
 
-Bucket
+By default, S3 blocks all public access. We need to allow it for static website hosting.
 
-↓
+1. Click your bucket name
+2. Go to **Permissions** tab
+3. Click **Edit** under **Block Public Access**
+4. **Uncheck** → `Block all public access`
+5. Click **Save changes**
+6. Type `confirm` in the confirmation box
+7. Click **Confirm**
 
-Permissions
+Expected — all four checkboxes are unchecked and the banner shows:
 
-↓
-
-Block Public Access
-
-↓
-
-Edit
-
-↓
-
-Uncheck:
-
-Block all public access
-
-Save.
+```
+Public access is not blocked
+```
 
 ---
 
 ## Step 4 - Upload Website Files
 
-Bucket
+1. Click the **Objects** tab
+2. Click **Upload**
+3. Click **Add files**
+4. Select both files:
+   - `source-code/index.html`
+   - `source-code/style.css`
+5. Click **Upload**
 
-↓
+Expected — both files listed under Objects:
 
-Upload
-
-Upload:
-
-index.html
-style.css
+```
+index.html    ...
+style.css     ...
+```
 
 ---
 
 ## Step 5 - Enable Static Website Hosting
 
-Bucket
+1. Go to **Properties** tab
+2. Scroll down to **Static website hosting**
+3. Click **Edit**
+4. Select **Enable**
+5. Fill in:
 
-↓
+| Field | Value |
+|-------|-------|
+| Index document | `index.html` |
+| Error document | `index.html` (optional — returns homepage on 404) |
 
-Properties
+6. Click **Save changes**
 
-↓
+Expected — the Static website hosting section shows a URL like:
 
-Static Website Hosting
+```
+http://techwithsandesh-website.s3-website-ap-south-1.amazonaws.com
+```
 
-↓
-
-Enable
-
-Index Document:
-
-index.html
-
-Save.
+> ℹ️ Copy and save this URL — you will use it in Step 7.
 
 ---
 
 ## Step 6 - Configure Bucket Policy
 
-Bucket
+Without a bucket policy, files are private even with public access unblocked.
 
-↓
+1. Go to **Permissions** tab
+2. Scroll to **Bucket policy**
+3. Click **Edit**
+4. Paste the following policy — **replace `techwithsandesh-website` with your actual bucket name**:
 
-Permissions
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": "*",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::techwithsandesh-website/*"
+    }
+  ]
+}
+```
 
-↓
+5. Click **Save changes**
 
-Bucket Policy
+Expected — the Permissions tab shows:
 
-Use the bucket-policy.json file provided in this project.
-
-Save.
+```
+Bucket policy: Public
+```
 
 ---
 
-## Step 7 - Access Website
+## Step 7 - Access the Website
 
-Bucket
+1. Go to **Properties** tab
+2. Scroll down to **Static website hosting**
+3. Click the **Bucket website endpoint** URL
 
-↓
+Or open it directly in your browser:
 
-Properties
-
-↓
-
-Static Website Hosting
-
-↓
-
-Copy Website Endpoint
-
-Example:
-
+```
 http://techwithsandesh-website.s3-website-ap-south-1.amazonaws.com
+```
 
-Open in browser.
+Expected output in browser:
 
----
-
-## Verification
-
-Verify:
-
-✅ Website loads
-
-✅ CSS loads
-
-✅ No Access Denied error
-
----
-
-## Expected Output
-
+```
 Welcome to My Website
-
 Hosted on AWS S3
+```
+
+> ℹ️ The text will be centered on the page thanks to the CSS file.
+
+---
+
+## Verification Checklist
+
+✅ S3 bucket created
+
+✅ Public access block disabled
+
+✅ Both `index.html` and `style.css` uploaded
+
+✅ Static website hosting enabled with `index.html` as index document
+
+✅ Bucket policy applied — Permissions tab shows `Public`
+
+✅ Website loads in browser with correct text and centered styling
+
+✅ No `Access Denied` or `403 Forbidden` error
+
+---
+
+## Troubleshooting
+
+**403 Access Denied when opening the URL:**
+- Check the bucket policy is applied and the resource ARN ends with `/*`
+- Check that public access block is fully disabled (all 4 checkboxes unchecked)
+
+**CSS not loading (unstyled text):**
+- Ensure `style.css` was uploaded to the same bucket root as `index.html`
+- Check the `<link>` tag in `index.html` points to `style.css` (not a path)
+
+**404 on the endpoint:**
+- Confirm Static Website Hosting is **enabled** and index document is set to `index.html`
 
 ---
 
 ## Cleanup
 
-Delete Files
+To avoid incurring AWS charges:
 
-↓
+1. Go to the bucket → **Objects** tab
+2. Select all files → **Delete**
+3. Go back to S3 bucket list
+4. Select your bucket → **Delete**
+5. Type the bucket name to confirm → **Delete bucket**
 
-Delete Bucket
+---
+
+## Production Notes
+
+> ⚠️ **HTTPS / Security Limitation:**
+> The S3 static website endpoint serves content over **HTTP only** — it does not support HTTPS.
+> For a production-grade deployment, use the following architecture:
+>
+> ```
+> User (HTTPS) → CloudFront Distribution → S3 Bucket (Origin Access Control)
+>                       ↑
+>           ACM SSL Certificate (must be in us-east-1)
+>                       ↑
+>           Custom Domain via Route 53 (optional)
+> ```
+>
+> Steps to upgrade:
+> 1. Request a free SSL certificate in **AWS Certificate Manager (ACM)** in `us-east-1`
+> 2. Create a **CloudFront distribution** — set S3 as the origin with **Origin Access Control (OAC)**
+> 3. Attach the ACM certificate to the CloudFront distribution
+> 4. Update the S3 bucket policy to only allow access from CloudFront (not the public)
+> 5. (Optional) Create a **Route 53** alias record pointing your domain to CloudFront
+>
+> This ensures HTTPS, low latency via global CDN, and locks down direct S3 access.
 
 ---
 
 ## Key Learnings
 
-- S3 Bucket
-- Objects
-- Bucket Policy
-- Static Website Hosting
-- Public Access
+- AWS S3 bucket creation and configuration
+- Disabling S3 Block Public Access
+- S3 Static Website Hosting
+- S3 Bucket Policies (JSON IAM policy)
+- Public access vs object ACLs
+- Static website endpoint URL format
+- CloudFront + ACM for HTTPS (production upgrade)
+- Route 53 DNS (optional custom domain)

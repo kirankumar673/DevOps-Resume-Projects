@@ -2,246 +2,317 @@
 
 ## Problem Statement
 
-Your company has successfully provisioned an Amazon EKS cluster using Terraform.
+Your company has an Amazon EKS cluster (from Project 15) but deploys applications manually.
 
 Current Problems:
 
-- Developers manually deploy applications
-- Deployment inconsistencies
-- Difficult rollback process
-- No GitOps workflow
+- Developers run `kubectl apply` manually — no audit trail
+- Configuration drift between Git and live cluster
+- No automated rollback when deployments fail
+- Multiple teams deploying to the same cluster inconsistently
 
-Build a GitOps solution using ArgoCD on Amazon EKS.
+Build a production GitOps workflow using ArgoCD on Amazon EKS — Git is the single source of truth, and every cluster change is tracked, auditable, and reversible.
 
 ---
 
-# Architecture
+## Architecture
 
+```
 Developer
     │
-    ▼
+    ▼ git push
 GitHub Repository
+(deployment.yaml, service.yaml)
     │
-    ▼
+    ▼ ArgoCD polls / webhook
 ArgoCD
+(running in argocd namespace on EKS)
     │
-    ▼
-Amazon EKS
-    │
-    ▼
-Application Pods
+    ├── Compares: Git state vs Live EKS state
+    ├── Auto-syncs on commit (or manual sync)
+    └── Self-heals on drift
+          │
+          ▼
+Amazon EKS Cluster
+└── Namespace: eks-argocd-demo
+      ├── Deployment: nginx (2 replicas, nginx:1.27)
+      └── Service: nginx-service (LoadBalancer → AWS ALB/NLB)
+```
 
 ---
 
-# Prerequisites
+## Project Structure
 
-- AWS Account
-- EKS Cluster Running
-- kubectl Installed
-- ArgoCD Installed
-- GitHub Repository
+```
+16-eks-argocd-gitops/
+├── deployment.yaml    ← Nginx Deployment (namespace, pinned image, resources, probes)
+└── service.yaml       ← Nginx Service (LoadBalancer type — gets real AWS ELB)
+```
 
 ---
 
-# Step 1 - Verify EKS Cluster
+## Prerequisites
 
-aws eks update-kubeconfig --region ap-south-1 --name devops-cluster
+- Amazon EKS cluster running (from Project 15 or existing cluster)
+- kubectl configured for EKS: `aws eks update-kubeconfig --region ap-south-1 --name devops-cluster`
+- GitHub account to host the manifests repository
 
-Verify:
+Verify cluster access:
 
+```bash
 kubectl get nodes
+```
 
 Expected:
 
-worker nodes ready
+```
+NAME                                       STATUS   ROLES    AGE
+ip-10-0-3-xx.ap-south-1.compute.internal  Ready    <none>   10m
+ip-10-0-4-xx.ap-south-1.compute.internal  Ready    <none>   10m
+```
 
 ---
 
-# Step 2 - Install ArgoCD
+## Step 1 - Push Manifests to GitHub
 
+Create a new GitHub repository (e.g., `eks-argocd-manifests`) and push:
+
+```bash
+git init
+git add deployment.yaml service.yaml
+git commit -m "Initial EKS GitOps manifests"
+git branch -M main
+git remote add origin https://github.com/YOUR_USERNAME/eks-argocd-manifests.git
+git push -u origin main
+```
+
+---
+
+## Step 2 - Create ArgoCD Namespace and Install ArgoCD
+
+```bash
 kubectl create namespace argocd
 
-kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+kubectl apply -n argocd \
+  -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+```
 
-Verify:
+Wait for all ArgoCD pods to be ready:
 
-kubectl get pods -n argocd
+```bash
+kubectl get pods -n argocd -w
+```
 
-Expected:
+Expected — all `Running` (takes 2–3 minutes):
 
-argocd-server running
-argocd-repo-server running
-argocd-application-controller running
+```
+NAME                                                READY   STATUS
+argocd-application-controller-0                     1/1     Running
+argocd-server-xxxxxxxxx-xxxxx                       1/1     Running
+argocd-repo-server-xxxxxxxxx-xxxxx                  1/1     Running
+argocd-dex-server-xxxxxxxxx-xxxxx                   1/1     Running
+argocd-redis-xxxxxxxxx-xxxxx                        1/1     Running
+```
 
 ---
 
-# Step 3 - Access ArgoCD UI
+## Step 3 - Get ArgoCD Admin Password
 
+```bash
+kubectl -n argocd get secret argocd-initial-admin-secret \
+  -o jsonpath="{.data.password}" | base64 -d && echo
+```
+
+Save this password.
+
+---
+
+## Step 4 - Access ArgoCD UI
+
+```bash
 kubectl port-forward svc/argocd-server -n argocd 8080:443
+```
 
-Open:
+Open: `https://localhost:8080`
 
-https://localhost:8080
+Login: username `admin`, password from Step 3.
 
----
-
-# Step 4 - Get ArgoCD Password
-
-kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
-
-Login:
-
-Username: admin
-
-Password: generated password
+> ℹ️ For production, expose ArgoCD via an Ingress with TLS instead of port-forward.
 
 ---
 
-# Step 5 - Create Application Repository
+## Step 5 - Create the Application Namespace
 
-16-eks-argocd-app/
-
-├── deployment.yaml
-└── service.yaml
-
----
-
-# Step 6 - Create Deployment
-
-Use deployment.yaml provided in this project.
+```bash
+kubectl create namespace eks-argocd-demo
+```
 
 ---
 
-# Step 7 - Create Service
+## Step 6 - Create ArgoCD Application
 
-Use service.yaml provided in this project.
+In the ArgoCD UI, click **+ New App**:
 
----
+| Field | Value |
+|-------|-------|
+| Application Name | `nginx-app` |
+| Project | `default` |
+| Sync Policy | `Automatic` |
+| Repository URL | `https://github.com/YOUR_USERNAME/eks-argocd-manifests` |
+| Revision | `HEAD` |
+| Path | `.` |
+| Cluster URL | `https://kubernetes.default.svc` |
+| Namespace | `eks-argocd-demo` |
 
-# Step 8 - Push Repository
-
-git add .
-
-git commit -m "Initial GitOps Deployment"
-
-git push
-
----
-
-# Step 9 - Create ArgoCD Application
-
-Application Name: nginx-app
-
-Repository URL:
-
-https://github.com/USERNAME/16-eks-argocd-app
-
-Path:
-
-/
-
-Namespace:
-
-default
+Click **Create**.
 
 ---
 
-# Step 10 - Sync Application
+## Step 7 - Verify Sync and Health
 
-Click:
+In ArgoCD UI — application should show:
 
-SYNC
+```
+✅ Healthy
+✅ Synced
+```
+
+Verify in kubectl:
+
+```bash
+kubectl get all -n eks-argocd-demo
+```
 
 Expected:
 
-Healthy
+```
+NAME                         READY   STATUS    RESTARTS
+pod/nginx-xxxxxxxxx-xxxxx    1/1     Running   0
+pod/nginx-xxxxxxxxx-yyyyy    1/1     Running   0
 
-Synced
+NAME                TYPE           EXTERNAL-IP
+nginx-service       LoadBalancer   abc123.ap-south-1.elb.amazonaws.com
+```
 
----
-
-# Step 11 - Verify Deployment
-
-kubectl get pods
-
-Expected:
-
-nginx pod running
-
-kubectl get svc
-
-Expected:
-
-LoadBalancer created
+> ℹ️ On EKS, a `LoadBalancer` service provisions a real AWS Classic Load Balancer or NLB automatically — this is the key difference from Minikube (Project 13).
 
 ---
 
-# Step 12 - Test GitOps
+## Step 8 - Access the Application
 
-Change:
+```bash
+kubectl get svc nginx-service -n eks-argocd-demo
+```
 
-replicas: 2
+Copy the `EXTERNAL-IP` and open it in your browser:
 
-to
+```
+http://abc123.ap-south-1.elb.amazonaws.com
+```
 
-replicas: 5
-
-Commit:
-
-git add .
-
-git commit -m "Scale application"
-
-git push
-
-Expected:
-
-ArgoCD syncs automatically
-
-5 pods running
+Expected — Nginx welcome page.
 
 ---
 
-# Verification
+## Step 9 - Test GitOps — Scale via Git
 
-Verify:
+Edit `deployment.yaml` locally — change replicas to 5:
 
-✅ EKS Running
+```yaml
+spec:
+  replicas: 5
+```
 
-✅ ArgoCD Running
+Commit and push:
 
-✅ GitHub Connected
+```bash
+git add deployment.yaml
+git commit -m "Scale nginx to 5 replicas"
+git push origin main
+```
 
-✅ Application Synced
+ArgoCD detects the change and applies it automatically. Watch:
 
-✅ Auto Deployment Working
+```bash
+kubectl get pods -n eks-argocd-demo -w
+```
+
+Expected — 5 pods running within seconds.
 
 ---
 
-# Expected Output
+## Step 10 - Test Drift Detection
 
-Healthy
+Manually scale down (simulates someone bypassing GitOps):
 
-Synced
+```bash
+kubectl scale deployment nginx -n eks-argocd-demo --replicas=1
+```
 
-LoadBalancer Available
+Within 3 minutes, ArgoCD detects the drift and restores to 5 replicas.
 
 ---
 
-# Cleanup
+## Verification Checklist
 
+✅ EKS cluster nodes `Ready`
+
+✅ ArgoCD installed — all pods `Running` in `argocd` namespace
+
+✅ GitHub repo connected as ArgoCD source
+
+✅ Application `Healthy` + `Synced` in ArgoCD UI
+
+✅ Pods running in `eks-argocd-demo` namespace
+
+✅ AWS Load Balancer EXTERNAL-IP accessible
+
+✅ Git replica change auto-applied by ArgoCD
+
+✅ Drift (kubectl scale) auto-corrected by ArgoCD
+
+---
+
+## Cleanup
+
+```bash
+# Remove test workload namespace
+kubectl delete namespace eks-argocd-demo
+
+# Remove ArgoCD
 kubectl delete namespace argocd
 
-Delete Application from ArgoCD.
+# Destroy EKS cluster (if no longer needed — see Project 15)
+cd ../15-terraform-eks && terraform destroy
+```
 
 ---
 
-# Key Learnings
+## Production Notes
 
-- Amazon EKS
-- ArgoCD
-- GitOps
-- Kubernetes
-- Continuous Delivery
-- AWS Load Balancer
-- Deployment Automation
+> **1. Use AWS Load Balancer Controller Instead of Classic ELB**
+> Install the AWS Load Balancer Controller to get Application Load Balancers (ALB) with path-based routing and HTTPS instead of Classic Load Balancers.
+
+> **2. Expose ArgoCD via Ingress (Not Port-Forward)**
+> In production, create an Ingress for ArgoCD with TLS using cert-manager and a real domain.
+
+> **3. Configure GitHub Webhook for Instant Sync**
+> ArgoCD polls Git every 3 minutes. Add a webhook for near-instant deployment on push.
+
+> **4. Use ArgoCD ApplicationSets for Multi-Environment**
+> Deploy the same application to dev/staging/prod using ArgoCD ApplicationSets with environment-specific values.
+
+---
+
+## Key Learnings
+
+- GitOps on Amazon EKS (production cloud environment)
+- ArgoCD installation and configuration on EKS
+- `LoadBalancer` service on EKS → AWS ELB/NLB provisioning
+- ArgoCD Application creation (repo, path, namespace, auto-sync)
+- Drift detection and self-healing on production cluster
+- Kubernetes subnet tags required for AWS Load Balancer
+- AWS Load Balancer Controller (ALB — production upgrade)
+- ArgoCD Ingress exposure with TLS (production pattern)
+- GitHub webhook for instant ArgoCD sync
+- ArgoCD ApplicationSets for multi-environment deployments

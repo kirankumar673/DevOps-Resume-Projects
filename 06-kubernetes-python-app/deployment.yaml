@@ -3,6 +3,7 @@ kind: Deployment
 
 metadata:
   name: python-app
+  namespace: python-app
 
 spec:
   replicas: 2
@@ -25,8 +26,33 @@ spec:
 
         image: python-app:v1
 
+        # imagePullPolicy: Never is required for Minikube local images
+        # Change to IfNotPresent or Always when using a remote registry
         imagePullPolicy: Never
 
         ports:
-
         - containerPort: 5000
+
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "250m"
+            memory: "256Mi"
+
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 10
+          periodSeconds: 15
+          failureThreshold: 3
+
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          failureThreshold: 3

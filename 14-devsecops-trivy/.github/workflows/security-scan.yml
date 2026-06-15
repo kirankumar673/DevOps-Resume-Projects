@@ -4,25 +4,89 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+# Prevent overlapping runs
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
 
-  security-scan:
-
+  # ──────────────────────────────────────────────
+  # JOB 1: Build image and run Trivy security scan
+  # ──────────────────────────────────────────────
+  scan:
+    name: Build and Security Scan
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: read
+      security-events: write   # Required to upload SARIF to GitHub Security tab
+
     steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-    - uses: actions/checkout@v4
+      - name: Build Docker Image
+        run: |
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/secure-app:${{ github.sha }} .
 
-    - name: Build Image
-      run: |
-        docker build -t app:latest .
+      - name: Run Trivy Vulnerability Scan (Table — for PR visibility)
+        uses: aquasecurity/trivy-action@0.20.0
+        with:
+          image-ref: ${{ secrets.DOCKER_USERNAME }}/secure-app:${{ github.sha }}
+          format: table
+          exit-code: 1
+          ignore-unfixed: true
+          severity: HIGH,CRITICAL
 
-    - name: Run Trivy Scan
-      uses: aquasecurity/trivy-action@master
-      with:
-        image-ref: app:latest
-        format: table
-        exit-code: 1
-        severity: HIGH,CRITICAL
+      - name: Run Trivy Scan (SARIF — for GitHub Security tab)
+        if: always()   # Upload even if scan found vulnerabilities
+        uses: aquasecurity/trivy-action@0.20.0
+        with:
+          image-ref: ${{ secrets.DOCKER_USERNAME }}/secure-app:${{ github.sha }}
+          format: sarif
+          output: trivy-results.sarif
+          ignore-unfixed: true
+          severity: HIGH,CRITICAL
+
+      - name: Upload SARIF to GitHub Security Tab
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-results.sarif
+
+  # ──────────────────────────────────────────────
+  # JOB 2: Push image only if scan passed
+  # ──────────────────────────────────────────────
+  push:
+    name: Push to DockerHub
+    runs-on: ubuntu-latest
+    needs: scan
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and Push Verified Image
+        run: |
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/secure-app:${{ github.sha }} .
+          docker tag ${{ secrets.DOCKER_USERNAME }}/secure-app:${{ github.sha }} \
+                     ${{ secrets.DOCKER_USERNAME }}/secure-app:latest
+          docker push ${{ secrets.DOCKER_USERNAME }}/secure-app:${{ github.sha }}
+          docker push ${{ secrets.DOCKER_USERNAME }}/secure-app:latest
+          echo "✅ Security-verified image pushed to DockerHub"

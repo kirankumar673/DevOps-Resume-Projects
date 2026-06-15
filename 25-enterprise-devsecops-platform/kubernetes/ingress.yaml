@@ -2,3 +2,27 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: enterprise-ingress
+  namespace: enterprise-devsecops
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+
+spec:
+  ingressClassName: nginx
+
+  tls:
+  - hosts:
+    - enterprise-app.yourdomain.com
+    secretName: enterprise-app-tls     # Created by cert-manager (Let's Encrypt)
+
+  rules:
+  - host: enterprise-app.yourdomain.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: enterprise-service
+            port:
+              number: 80

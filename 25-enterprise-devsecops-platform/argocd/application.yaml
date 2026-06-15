@@ -2,3 +2,32 @@ apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: enterprise-devsecops
+  namespace: argocd           # ArgoCD Application resources live in argocd namespace
+  finalizers:
+  - resources-finalizer.argocd.argoproj.io   # Cascade-delete k8s resources on app delete
+
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/YOUR_ORG/enterprise-gitops-manifests.git
+    targetRevision: HEAD
+    path: kubernetes            # ArgoCD watches this directory for manifest changes
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: enterprise-devsecops
+
+  syncPolicy:
+    automated:
+      prune: true               # Remove resources deleted from Git
+      selfHeal: true            # Auto-restore if someone manually changes the cluster
+    syncOptions:
+    - CreateNamespace=true      # Auto-create namespace if it doesn't exist
+    - PrunePropagationPolicy=foreground
+    retry:
+      limit: 3
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
