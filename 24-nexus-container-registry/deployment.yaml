@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: nexus-app
+
+spec:
+  replicas: 2
+
+  selector:
+    matchLabels:
+      app: nexus-app
+
+  template:
+    metadata:
+      labels:
+        app: nexus-app
+
+    spec:
+      containers:
+      - name: nexus-app
+        image: EC2-IP:8082/nexus-app:v1

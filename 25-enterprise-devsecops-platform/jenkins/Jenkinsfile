@@ -1,0 +1,13 @@
+Checkout
+↓
+SonarQube Scan
+↓
+Quality Gate
+↓
+Docker Build
+↓
+Trivy Scan
+↓
+Push To Nexus
+↓
+Update GitOps Repo

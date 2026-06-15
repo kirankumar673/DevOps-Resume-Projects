@@ -1,0 +1,32 @@
+pipeline {
+
+    agent any
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                git 'https://github.com/USERNAME/repo.git'
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                sh 'docker build -t flask-app .'
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                sh 'docker push USERNAME/flask-app:latest'
+            }
+        }
+
+        stage('Deploy To Kubernetes') {
+            steps {
+                sh 'kubectl apply -f deployment.yaml'
+                sh 'kubectl apply -f service.yaml'
+            }
+        }
+    }
+}

@@ -1,0 +1,1 @@
+resource "aws_lb" "alb" { name="terraform-alb" load_balancer_type="application" }

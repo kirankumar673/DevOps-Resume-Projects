@@ -1,0 +1,37 @@
+pipeline {
+
+  agent any
+
+  stages {
+
+    stage('Checkout') {
+      steps {
+        git 'https://github.com/USERNAME/repo.git'
+      }
+    }
+
+    stage('SonarQube Scan') {
+      steps {
+        sh 'sonar-scanner'
+      }
+    }
+
+    stage('Quality Gate') {
+      steps {
+        waitForQualityGate abortPipeline: true
+      }
+    }
+
+    stage('Docker Build') {
+      steps {
+        sh 'docker build -t python-app .'
+      }
+    }
+
+    stage('Deploy') {
+      steps {
+        sh 'kubectl apply -f deployment.yaml'
+      }
+    }
+  }
+}

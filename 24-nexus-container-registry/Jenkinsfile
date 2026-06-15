@@ -1,0 +1,19 @@
+pipeline {
+
+  agent any
+
+  stages {
+
+    stage('Build') {
+      steps {
+        sh 'docker build -t nexus-app .'
+      }
+    }
+
+    stage('Push To Nexus') {
+      steps {
+        sh 'docker push EC2-IP:8082/nexus-app:v1'
+      }
+    }
+  }
+}
