@@ -1,0 +1,2430 @@
+
+==============================================================
+         DEVOPS COMPLETE CHEATSHEET — ALL TOOLS
+==============================================================
+
+
+==============================================================
+ 1. LINUX
+==============================================================
+
+--- FILE & DIRECTORY ---
+pwd                          Show current working directory
+ls                           List files and folders
+ls -la                       List all files with permissions and hidden files
+cd /path                     Change to a directory
+cd ..                        Go one level up
+cd ~                         Go to home directory
+mkdir foldername             Create a new directory
+mkdir -p a/b/c               Create nested directories in one command
+rm file.txt                  Delete a file
+rm -rf foldername            Delete a folder and all its contents forcefully
+cp file1 file2               Copy file1 to file2
+cp -r folder1 folder2        Copy a folder recursively
+mv file1 file2               Move or rename a file
+touch file.txt               Create an empty file
+cat file.txt                 Print file contents to terminal
+less file.txt                View file contents page by page
+head -n 20 file.txt          Show first 20 lines of a file
+tail -n 20 file.txt          Show last 20 lines of a file
+tail -f file.txt             Watch file in real time (useful for logs)
+find / -name file.txt        Search for a file by name from root
+find . -name "*.log"         Find all .log files in current directory
+du -sh foldername            Show disk usage of a folder in human readable form
+df -h                        Show disk space usage of all mounted filesystems
+
+--- FILE PERMISSIONS ---
+chmod 755 file.sh            Give owner rwx, group and others rx permissions
+chmod 400 key.pem            Make file read-only for owner (required for SSH keys)
+chmod +x script.sh           Make a script executable
+chown user:group file.txt    Change file owner and group
+ls -l                        View file permissions
+
+--- TEXT & SEARCH ---
+grep "word" file.txt         Search for a word inside a file
+grep -r "word" .             Search recursively in all files in directory
+grep -i "word" file.txt      Case-insensitive search
+grep -n "word" file.txt      Show line numbers with matches
+cat file.txt | grep "error"  Pipe file output into grep filter
+sort file.txt                Sort lines in a file alphabetically
+sort -n file.txt             Sort lines numerically
+uniq file.txt                Remove duplicate adjacent lines
+wc -l file.txt               Count number of lines in a file
+sed 's/old/new/g' file.txt   Replace all occurrences of old with new in file
+awk '{print $1}' file.txt    Print first column of each line
+cut -d',' -f1 file.csv       Cut and print first field using comma as delimiter
+echo "hello world"           Print text to terminal
+echo $VARIABLE               Print value of an environment variable
+
+--- PROCESS MANAGEMENT ---
+ps aux                       Show all running processes
+ps aux | grep nginx          Find a specific running process
+top                          Live view of running processes and resource usage
+htop                         Enhanced interactive process viewer
+kill PID                     Kill a process by its process ID
+kill -9 PID                  Force kill a process immediately
+pkill nginx                  Kill all processes matching name nginx
+nohup command &              Run command in background that survives logout
+jobs                         List background jobs in current shell
+fg                           Bring background job to foreground
+bg                           Send a paused job to background
+systemctl start nginx        Start a service
+systemctl stop nginx         Stop a service
+systemctl restart nginx      Restart a service
+systemctl status nginx       Check if a service is running
+systemctl enable nginx       Enable service to start automatically on boot
+systemctl disable nginx      Disable service from starting on boot
+journalctl -u nginx          View logs for a specific systemd service
+journalctl -f                Follow live system logs
+
+--- NETWORKING ---
+ip a                         Show all network interfaces and IP addresses
+ifconfig                     Show network interface configuration (older)
+ping google.com              Test network connectivity to a host
+curl http://example.com      Make an HTTP GET request
+curl -I http://example.com   Get only HTTP response headers
+curl -X POST -d '{}' URL     Send an HTTP POST request with data
+wget http://example.com/file Download a file from a URL
+netstat -tuln                Show all open ports and listening services
+ss -tuln                     Modern replacement for netstat
+nslookup google.com          DNS lookup for a domain
+dig google.com               Detailed DNS query information
+traceroute google.com        Trace the network path to a destination
+ssh user@IP                  Connect to a remote server via SSH
+ssh -i key.pem user@IP       Connect to a remote server using a key file
+scp file.txt user@IP:/path   Copy a file to a remote server securely
+scp user@IP:/path/file .     Download a file from a remote server
+rsync -avz src/ user@IP:dst  Sync files to remote server efficiently
+
+--- USER MANAGEMENT ---
+whoami                       Show current logged in user
+id                           Show user ID and group ID
+sudo command                 Run command as superuser
+su - username                Switch to another user
+useradd username             Create a new user
+passwd username              Set or change user password
+usermod -aG groupname user   Add user to a group
+groups username              Show groups a user belongs to
+who                          Show who is currently logged in
+
+--- PACKAGE MANAGEMENT (Ubuntu/Debian) ---
+apt update                   Update package list from repositories
+apt upgrade -y               Upgrade all installed packages
+apt install nginx -y         Install a package
+apt remove nginx             Remove a package
+apt autoremove               Remove unused packages
+dpkg -l                      List all installed packages
+
+--- PACKAGE MANAGEMENT (CentOS/RHEL) ---
+yum update -y                Update all packages
+yum install nginx -y         Install a package
+yum remove nginx             Remove a package
+rpm -qa                      List all installed RPM packages
+
+--- ENVIRONMENT VARIABLES ---
+export VAR=value             Set an environment variable for current session
+echo $VAR                    Print value of a variable
+env                          List all environment variables
+printenv VAR                 Print a specific environment variable
+unset VAR                    Remove an environment variable
+source ~/.bashrc             Reload bash configuration file
+
+--- DISK & STORAGE ---
+lsblk                        List all block devices and partitions
+fdisk -l                     List disk partitions
+mount /dev/sdb1 /mnt         Mount a disk partition
+umount /mnt                  Unmount a mounted partition
+free -h                      Show RAM usage in human readable format
+vmstat                       Show virtual memory statistics
+
+--- ARCHIVING & COMPRESSION ---
+tar -czf archive.tar.gz dir  Compress a directory into a .tar.gz file
+tar -xzf archive.tar.gz      Extract a .tar.gz archive
+tar -tzf archive.tar.gz      List contents of a tar archive without extracting
+zip -r archive.zip folder    Create a zip archive
+unzip archive.zip            Extract a zip archive
+
+--- SHELL SCRIPTING BASICS ---
+#!/bin/bash                  Shebang line — declares script uses bash
+set -e                       Exit script immediately if any command fails
+set -x                       Print each command before executing (debug mode)
+$1 $2 $3                     Positional arguments passed to script
+$#                           Number of arguments passed to script
+$?                           Exit code of the last command (0 = success)
+if [ condition ]; then fi    If-else conditional block
+for i in list; do done       Loop over a list
+while [ condition ]; do done While loop
+function name() { }          Define a reusable function
+echo "done" >> file.txt      Append output to a file
+command1 && command2         Run command2 only if command1 succeeds
+command1 || command2         Run command2 only if command1 fails
+command1 | command2          Pipe output of command1 as input to command2
+
+
+==============================================================
+ 2. GIT
+==============================================================
+
+--- SETUP & CONFIGURATION ---
+git --version                          Check installed Git version
+git config --global user.name "Name"   Set your global username for commits
+git config --global user.email "mail"  Set your global email for commits
+git config --list                      Show all Git configuration settings
+git config --global core.editor vim    Set default editor for Git messages
+git config --global alias.st status    Create a shortcut alias for a command
+
+--- INITIALIZE & CLONE ---
+git init                               Initialize a new empty Git repository
+git init foldername                    Create a new repo inside a named folder
+git clone URL                          Clone a remote repository to local machine
+git clone URL foldername               Clone into a specific folder name
+git clone --depth 1 URL               Shallow clone with only latest commit
+
+--- STAGING & COMMITTING ---
+git status                             Show changed, staged and untracked files
+git add file.txt                       Stage a specific file for commit
+git add .                              Stage all changed files in current directory
+git add -p                             Interactively stage parts of files (hunks)
+git commit -m "message"               Commit staged files with a message
+git commit -am "message"              Stage tracked files and commit in one step
+git commit --amend -m "new msg"       Edit the last commit message
+git commit --amend --no-edit          Add staged changes to last commit silently
+
+--- BRANCHING ---
+git branch                             List all local branches
+git branch -a                          List all local and remote branches
+git branch -r                          List only remote branches
+git branch featurename                 Create a new branch
+git checkout branchname               Switch to an existing branch
+git checkout -b branchname            Create and switch to a new branch
+git switch branchname                 Modern way to switch branches
+git switch -c branchname              Modern way to create and switch branches
+git branch -d branchname              Delete a branch safely (merged only)
+git branch -D branchname              Force delete a branch even if unmerged
+git branch -m oldname newname         Rename a branch
+
+--- MERGING & REBASING ---
+git merge branchname                  Merge a branch into current branch
+git merge --no-ff branchname          Merge and always create a merge commit
+git merge --squash branchname         Squash all commits into one before merging
+git rebase main                       Reapply commits on top of main branch
+git rebase -i HEAD~3                  Interactive rebase last 3 commits
+git rebase --continue                 Continue rebase after resolving conflict
+git rebase --abort                    Cancel an ongoing rebase
+git cherry-pick COMMIT_SHA            Apply a specific commit to current branch
+
+--- REMOTE REPOSITORIES ---
+git remote -v                          Show all remote connections with URLs
+git remote add origin URL             Add a remote repository named origin
+git remote remove origin              Remove a remote connection
+git remote rename origin upstream     Rename a remote connection
+git fetch                              Download changes without merging
+git fetch --all                        Fetch all remotes
+git pull                               Fetch and merge remote changes
+git pull origin main                  Pull from specific remote and branch
+git pull --rebase origin main         Pull and rebase instead of merge
+git push origin branchname            Push local branch to remote
+git push -u origin branchname         Push and set upstream tracking
+git push origin --delete branchname   Delete a remote branch
+git push --force-with-lease           Force push safely (checks remote state)
+git push --tags                        Push all local tags to remote
+
+--- LOGS & HISTORY ---
+git log                                Show full commit history
+git log --oneline                      Show compact one line per commit history
+git log --oneline --graph --all        Show visual branch graph for all branches
+git log --author="Name"               Filter commits by author name
+git log --since="2 weeks ago"         Show commits from last 2 weeks
+git log -p file.txt                    Show changes made to a specific file
+git log --stat                         Show files changed in each commit
+git show COMMIT_SHA                    Show details of a specific commit
+git diff                               Show unstaged changes
+git diff --staged                      Show staged changes ready for commit
+git diff branch1..branch2             Compare two branches
+git blame file.txt                     Show who changed each line of a file
+git shortlog -sn                       Show commit count per author
+
+--- UNDOING CHANGES ---
+git restore file.txt                   Discard unstaged changes in a file
+git restore --staged file.txt          Unstage a file without losing changes
+git reset HEAD~1                       Undo last commit and keep changes staged
+git reset --soft HEAD~1               Undo last commit and keep changes in working dir
+git reset --hard HEAD~1               Undo last commit and delete all changes
+git reset --hard origin/main          Reset local branch to match remote exactly
+git revert COMMIT_SHA                  Create a new commit that undoes a commit
+git clean -fd                          Remove all untracked files and directories
+
+--- STASHING ---
+git stash                              Temporarily save uncommitted changes
+git stash save "message"              Stash with a descriptive label
+git stash list                         Show all stashed entries
+git stash pop                          Apply latest stash and remove it from list
+git stash apply stash@{0}             Apply a specific stash without removing it
+git stash drop stash@{0}              Delete a specific stash entry
+git stash clear                        Delete all stash entries
+git stash branch branchname           Create new branch from a stash
+
+--- TAGGING ---
+git tag                                List all tags
+git tag v1.0.0                         Create a lightweight tag
+git tag -a v1.0.0 -m "Release 1.0"   Create an annotated tag with message
+git tag -a v1.0.0 COMMIT_SHA          Tag a specific past commit
+git show v1.0.0                        Show details of a tag
+git push origin v1.0.0                Push a specific tag to remote
+git push origin --tags                 Push all tags to remote
+git tag -d v1.0.0                      Delete a local tag
+git push origin --delete v1.0.0       Delete a remote tag
+
+--- SUBMODULES ---
+git submodule add URL path             Add a submodule to the repository
+git submodule init                     Initialize submodule config
+git submodule update                   Fetch and checkout submodule content
+git clone --recurse-submodules URL    Clone repo and all its submodules
+
+--- GITIGNORE ---
+.gitignore                             File that lists patterns Git should ignore
+*.log                                  Ignore all log files
+node_modules/                          Ignore the node_modules directory
+.env                                   Ignore .env secrets file
+git check-ignore -v file.txt           Check why a file is being ignored
+git rm --cached file.txt               Stop tracking a file already committed
+
+--- TROUBLESHOOTING ---
+git fsck                               Check repository integrity
+git reflog                             Show history of HEAD movements (recovery tool)
+git bisect start                       Start binary search to find a bad commit
+git bisect bad                         Mark current commit as bad
+git bisect good COMMIT_SHA            Mark a known good commit
+git bisect reset                       End bisect session
+
+
+==============================================================
+ 3. DOCKER
+==============================================================
+
+--- INSTALLATION & VERSION ---
+docker --version                              Show installed Docker version
+docker info                                   Show system-wide Docker information
+docker version                                Show client and server version details
+
+--- IMAGES ---
+docker images                                 List all locally available images
+docker images -a                              List all images including intermediate layers
+docker pull nginx                             Download image from Docker Hub
+docker pull nginx:1.27                        Download a specific version of an image
+docker push user/image:tag                    Push image to Docker Hub or registry
+docker build -t myapp:v1 .                    Build image from Dockerfile in current directory
+docker build -t myapp:v1 -f Dockerfile.prod . Build image using a specific Dockerfile
+docker build --build-arg VERSION=1.0 -t app . Build image with a build argument passed in
+docker build --no-cache -t myapp:v1 .         Build image without using cached layers
+docker tag myapp:v1 user/myapp:v1             Tag an image with a new name
+docker rmi image:tag                          Remove a specific image
+docker rmi -f image:tag                       Force remove an image even if used by container
+docker image prune                            Remove all unused dangling images
+docker image prune -a                         Remove all unused images not used by any container
+docker save -o image.tar myapp:v1             Export image to a tar file
+docker load -i image.tar                      Import image from a tar file
+docker history myapp:v1                       Show layers and commands used to build an image
+docker inspect myapp:v1                       Show detailed JSON metadata of an image
+
+--- CONTAINERS ---
+docker run nginx                              Run a container from nginx image in foreground
+docker run -d nginx                           Run container in detached background mode
+docker run -d -p 8080:80 nginx               Run container mapping host port 8080 to container port 80
+docker run -d --name webserver nginx          Run container with a custom name
+docker run -it ubuntu bash                    Run container interactively with bash terminal
+docker run --rm ubuntu echo "hello"           Run container and auto remove it when it exits
+docker run -e ENV_VAR=value nginx             Run container with an environment variable set
+docker run -v /host/path:/container/path app  Mount a host directory into the container
+docker run -v myvolume:/data app              Mount a named volume into the container
+docker run --network mynetwork app            Run container on a specific network
+docker run --memory="512m" app               Limit container to 512MB of memory
+docker run --cpus="0.5" app                  Limit container to use half a CPU core
+docker run -d --restart unless-stopped app   Run container that restarts automatically
+docker ps                                     List all running containers
+docker ps -a                                  List all containers including stopped ones
+docker ps -q                                  List only container IDs of running containers
+docker start CONTAINER                        Start a stopped container
+docker stop CONTAINER                         Gracefully stop a running container
+docker stop $(docker ps -q)                   Stop all running containers at once
+docker restart CONTAINER                      Restart a running container
+docker kill CONTAINER                         Force kill a container immediately
+docker rm CONTAINER                           Remove a stopped container
+docker rm -f CONTAINER                        Force remove a running container
+docker rm $(docker ps -aq)                    Remove all stopped containers at once
+docker container prune                        Remove all stopped containers
+docker rename old_name new_name               Rename an existing container
+docker pause CONTAINER                        Pause all processes in a container
+docker unpause CONTAINER                      Resume a paused container
+
+--- CONTAINER INTERACTION ---
+docker exec -it CONTAINER bash               Open bash shell inside running container
+docker exec -it CONTAINER sh                 Open sh shell (for alpine based images)
+docker exec CONTAINER ls /app               Run a single command inside a container
+docker attach CONTAINER                       Attach terminal to a running container
+docker logs CONTAINER                         Show logs of a container
+docker logs -f CONTAINER                      Follow live logs of a container in real time
+docker logs --tail 100 CONTAINER              Show last 100 lines of container logs
+docker logs --since 1h CONTAINER             Show logs from the last 1 hour
+docker cp file.txt CONTAINER:/app/file.txt   Copy file from host into a container
+docker cp CONTAINER:/app/file.txt ./file.txt  Copy file from container to host
+docker diff CONTAINER                         Show filesystem changes in a container
+docker top CONTAINER                          Show running processes inside a container
+docker stats                                  Live stream resource usage of all containers
+docker stats CONTAINER                        Show resource usage of a specific container
+docker inspect CONTAINER                      Show detailed JSON info about a container
+docker port CONTAINER                         Show port mappings of a container
+
+--- VOLUMES ---
+docker volume create myvolume                 Create a named volume
+docker volume ls                              List all volumes
+docker volume inspect myvolume               Show details of a volume
+docker volume rm myvolume                     Remove a named volume
+docker volume prune                           Remove all unused volumes
+
+--- NETWORKS ---
+docker network create mynetwork              Create a custom bridge network
+docker network create --driver overlay net   Create an overlay network for swarm
+docker network ls                             List all Docker networks
+docker network inspect mynetwork             Show details of a network
+docker network connect mynetwork CONTAINER   Connect a running container to a network
+docker network disconnect mynetwork CONTAINER Disconnect a container from a network
+docker network rm mynetwork                  Remove a network
+docker network prune                          Remove all unused networks
+
+--- DOCKERFILE INSTRUCTIONS ---
+FROM python:3.11-slim                         Base image for the build
+ARG VERSION=1.0                               Build-time variable passed via --build-arg
+ENV APP_ENV=production                        Set environment variable inside container
+WORKDIR /app                                  Set working directory for all commands below
+COPY requirements.txt .                       Copy file from host to container filesystem
+COPY . .                                      Copy everything from host to WORKDIR
+RUN pip install -r requirements.txt           Execute command during build
+RUN useradd -m appuser && USER appuser        Create and switch to non-root user
+EXPOSE 5000                                   Document that container listens on port 5000
+HEALTHCHECK --interval=30s CMD curl /health  Define health check command for container
+VOLUME ["/data"]                              Declare a mount point for external storage
+ENTRYPOINT ["python"]                         Set fixed executable for the container
+CMD ["app.py"]                                Set default arguments passed to ENTRYPOINT
+LABEL maintainer="name@email.com"            Add metadata label to the image
+ONBUILD COPY . /app                           Trigger instruction when image is used as base
+
+--- REGISTRY ---
+docker login                                  Log in to Docker Hub
+docker login registry.example.com            Log in to a private registry
+docker logout                                 Log out from registry
+docker search nginx                           Search Docker Hub for an image
+docker pull user/image:tag                    Pull image from Docker Hub
+
+--- SYSTEM CLEANUP ---
+docker system df                              Show disk usage by Docker objects
+docker system prune                           Remove all stopped containers, unused images and networks
+docker system prune -a                        Remove everything including unused images
+docker system prune -a --volumes              Remove everything including volumes
+docker builder prune                          Remove Docker build cache
+
+--- DOCKER COMPOSE (quick reference - full section below) ---
+docker compose up -d                          Start all services in background
+docker compose down                           Stop and remove all containers and networks
+docker compose logs -f                        Follow logs from all services
+
+--- DOCKER SWARM ---
+docker swarm init                             Initialize current node as swarm manager
+docker swarm join --token TOKEN HOST:PORT    Join a node to an existing swarm
+docker swarm leave                            Leave the swarm (worker node)
+docker swarm leave --force                   Force leave swarm (manager node)
+docker service create --name web nginx       Create a swarm service
+docker service ls                             List all swarm services
+docker service ps web                         List tasks running in a service
+docker service scale web=5                   Scale a service to 5 replicas
+docker service update --image nginx:1.27 web  Update service image with rolling update
+docker service rm web                         Remove a swarm service
+docker node ls                                List all nodes in the swarm
+
+
+==============================================================
+ 4. DOCKER COMPOSE
+==============================================================
+
+--- BASIC COMMANDS ---
+docker compose version                        Show Docker Compose version installed
+docker compose up                             Start all services in foreground
+docker compose up -d                          Start all services in detached background mode
+docker compose up --build                     Rebuild images before starting services
+docker compose up --build -d                  Rebuild and start in background
+docker compose up --scale web=3              Start with 3 replicas of the web service
+docker compose down                           Stop and remove containers and networks
+docker compose down -v                        Stop and also remove all named volumes
+docker compose down --rmi all                 Stop and remove all images used by services
+docker compose start                          Start existing stopped containers
+docker compose stop                           Stop running containers without removing them
+docker compose restart                        Restart all services
+docker compose restart web                    Restart a specific service only
+docker compose pause                          Pause all services
+docker compose unpause                        Unpause all services
+docker compose kill                           Force stop all services immediately
+
+--- BUILDING ---
+docker compose build                          Build or rebuild all service images
+docker compose build web                      Build image for a specific service only
+docker compose build --no-cache              Build all images without cache
+docker compose build --parallel              Build all images in parallel
+
+--- LOGS & MONITORING ---
+docker compose logs                           Show logs from all services
+docker compose logs -f                        Follow live logs from all services
+docker compose logs web                       Show logs from a specific service
+docker compose logs -f web                    Follow live logs from a specific service
+docker compose logs --tail=50 web             Show last 50 lines of service logs
+docker compose ps                             List all containers managed by compose
+docker compose ps -a                          List all containers including stopped ones
+docker compose top                            Show running processes in each container
+docker compose stats                          Show live resource usage of all containers
+
+--- RUNNING COMMANDS ---
+docker compose exec web bash                 Open bash inside running web container
+docker compose exec web sh                   Open sh shell inside running web container
+docker compose exec db psql -U postgres      Open psql inside running db container
+docker compose run web python manage.py      Run one-off command in a new container
+docker compose run --rm web python test.py   Run command and remove container after exit
+
+--- CONFIGURATION ---
+docker compose config                         Validate and print resolved compose file
+docker compose config --services             List all service names defined
+docker compose config --volumes              List all volumes defined
+docker compose -f docker-compose.prod.yml up Use a custom compose file
+docker compose --env-file .env.prod up       Use a custom env file
+docker compose --project-name myapp up       Set a custom project name
+
+--- DOCKER COMPOSE FILE REFERENCE ---
+version: "3.9"                                Specify compose file version (3.x recommended)
+
+services:                                     Define all application services
+  web:
+    build: .                                  Build image from Dockerfile in current directory
+    build:
+      context: ./app                          Set build context directory
+      dockerfile: Dockerfile.prod             Use a specific Dockerfile
+      args:
+        VERSION: "1.0"                        Pass build arguments to Dockerfile
+    image: nginx:1.27                         Use a pre-built image instead of building
+    container_name: web-app                   Set a fixed container name
+    ports:
+      - "80:80"                               Map host port 80 to container port 80
+      - "443:443"                             Map host port 443 to container port 443
+    environment:
+      - APP_ENV=production                    Set environment variable directly
+    env_file:
+      - .env                                  Load environment variables from a file
+    volumes:
+      - ./html:/usr/share/nginx/html          Bind mount host directory into container
+      - mydata:/var/lib/data                  Mount named volume into container
+    networks:
+      - appnet                                Attach service to a named network
+    depends_on:
+      db:
+        condition: service_healthy            Wait until db passes health check
+    restart: unless-stopped                   Restart policy for container
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost"]
+      interval: 30s                           How often to run the health check
+      timeout: 10s                            Time to wait for health check response
+      retries: 3                              Failures before marking unhealthy
+      start_period: 10s                       Grace period before health checks start
+    command: gunicorn app:app                 Override default CMD from Dockerfile
+    entrypoint: python                        Override default ENTRYPOINT
+    working_dir: /app                         Set working directory in container
+    user: "1000:1000"                         Run container as specific user ID
+    mem_limit: 512m                           Limit container memory usage
+    cpus: "0.5"                               Limit container CPU usage
+    logging:
+      driver: json-file                       Use json-file log driver
+      options:
+        max-size: "10m"                       Max size of each log file
+        max-file: "3"                         Max number of log files to keep
+    labels:
+      app: myapp                              Add metadata labels to container
+    stdin_open: true                          Keep stdin open (like docker run -i)
+    tty: true                                 Allocate a TTY (like docker run -t)
+    privileged: false                         Do not run in privileged mode
+    read_only: true                           Mount root filesystem as read only
+
+networks:
+  appnet:
+    driver: bridge                            Create a custom bridge network
+  external_net:
+    external: true                            Use a pre-existing external network
+
+volumes:
+  mydata:
+    driver: local                             Create a named local volume
+  external_vol:
+    external: true                            Use a pre-existing external volume
+
+--- ENV FILE (.env) ---
+POSTGRES_USER=admin                           Define variable used in compose file
+POSTGRES_PASSWORD=secret                      Sensitive value loaded from env file
+POSTGRES_DB=appdb                             Reference in compose as ${POSTGRES_DB}
+
+--- COMMON PATTERNS ---
+docker compose up -d && docker compose logs -f              Start and immediately follow logs
+docker compose down -v && docker compose up --build -d      Full reset and rebuild
+docker compose exec db pg_dump -U postgres db > backup.sql  Backup database from container
+docker compose exec db psql -U postgres < backup.sql        Restore database into container
+
+
+==============================================================
+ 5. KUBERNETES (kubectl)
+==============================================================
+
+--- CLUSTER & CONTEXT ---
+kubectl version                                       Show kubectl client and server version
+kubectl cluster-info                                  Display cluster endpoint and services
+kubectl config view                                   Show kubeconfig file contents
+kubectl config get-contexts                           List all available contexts
+kubectl config current-context                        Show the currently active context
+kubectl config use-context CONTEXT_NAME               Switch to a different cluster context
+kubectl config set-context --current --namespace=ns   Set default namespace for current context
+kubectl api-resources                                 List all available Kubernetes resource types
+kubectl api-versions                                  List all available API versions
+
+--- NODES ---
+kubectl get nodes                                     List all nodes in the cluster
+kubectl get nodes -o wide                             List nodes with extra details like IP and OS
+kubectl describe node NODE_NAME                       Show detailed info about a node
+kubectl top node                                      Show CPU and memory usage of all nodes
+kubectl top node NODE_NAME                            Show resource usage of a specific node
+kubectl cordon NODE_NAME                              Mark node as unschedulable (no new pods)
+kubectl uncordon NODE_NAME                            Mark node as schedulable again
+kubectl drain NODE_NAME                               Safely evict pods from a node for maintenance
+kubectl drain NODE_NAME --ignore-daemonsets           Drain node ignoring DaemonSet pods
+kubectl taint nodes NODE_NAME key=value:NoSchedule    Add a taint to prevent pods scheduling
+
+--- NAMESPACES ---
+kubectl get namespaces                                List all namespaces
+kubectl get ns                                        Short form to list namespaces
+kubectl create namespace myapp                        Create a new namespace
+kubectl delete namespace myapp                        Delete a namespace and all resources in it
+kubectl get all -n myapp                              List all resources in a specific namespace
+kubectl get all --all-namespaces                      List all resources across all namespaces
+kubectl get all -A                                    Short form for all namespaces
+
+--- PODS ---
+kubectl get pods                                      List all pods in default namespace
+kubectl get pods -n myapp                             List pods in a specific namespace
+kubectl get pods -A                                   List pods across all namespaces
+kubectl get pods -o wide                              List pods with node and IP information
+kubectl get pods --show-labels                        List pods with their labels
+kubectl get pods -l app=nginx                         List pods filtered by label
+kubectl get pods -w                                   Watch pods in real time for status changes
+kubectl describe pod POD_NAME                         Show detailed info and events for a pod
+kubectl describe pod POD_NAME -n myapp               Describe a pod in a specific namespace
+kubectl logs POD_NAME                                 Show logs of a pod
+kubectl logs POD_NAME -f                              Follow live logs of a pod
+kubectl logs POD_NAME --tail=100                      Show last 100 lines of pod logs
+kubectl logs POD_NAME -c CONTAINER_NAME               Show logs of a specific container in a pod
+kubectl logs POD_NAME --previous                      Show logs of the previously crashed container
+kubectl exec -it POD_NAME -- bash                     Open bash shell inside a running pod
+kubectl exec -it POD_NAME -- sh                       Open sh shell inside a running pod
+kubectl exec -it POD_NAME -c CONTAINER -- bash        Exec into a specific container in a pod
+kubectl exec POD_NAME -- ls /app                      Run single command inside a pod
+kubectl cp POD_NAME:/app/file.txt ./file.txt          Copy file from pod to local machine
+kubectl cp ./file.txt POD_NAME:/app/file.txt          Copy file from local machine to pod
+kubectl delete pod POD_NAME                           Delete a pod (will restart if managed)
+kubectl delete pod POD_NAME --force                   Force delete a stuck pod immediately
+kubectl top pod                                       Show CPU and memory usage of all pods
+kubectl top pod POD_NAME                              Show resource usage of a specific pod
+kubectl port-forward pod/POD_NAME 8080:80             Forward local port 8080 to pod port 80
+kubectl run nginx --image=nginx                       Run a quick pod for testing
+kubectl run -it --rm debug --image=busybox -- sh      Run a temporary debug pod and auto remove
+
+--- DEPLOYMENTS ---
+kubectl get deployments                               List all deployments in default namespace
+kubectl get deploy -n myapp                           List deployments in a specific namespace
+kubectl describe deployment DEPLOY_NAME               Show detailed deployment information
+kubectl create deployment nginx --image=nginx         Create a deployment imperatively
+kubectl apply -f deployment.yaml                      Create or update deployment from YAML file
+kubectl delete deployment DEPLOY_NAME                 Delete a deployment and its pods
+kubectl scale deployment DEPLOY_NAME --replicas=5     Scale deployment to 5 replicas
+kubectl autoscale deployment DEPLOY_NAME --min=2 --max=10 --cpu-percent=70  Set HPA autoscaling
+kubectl set image deployment/DEPLOY_NAME app=image:v2  Update container image in a deployment
+kubectl rollout status deployment/DEPLOY_NAME         Watch rollout progress of a deployment
+kubectl rollout history deployment/DEPLOY_NAME        Show revision history of a deployment
+kubectl rollout undo deployment/DEPLOY_NAME           Rollback to the previous version
+kubectl rollout undo deployment/DEPLOY_NAME --to-revision=2  Rollback to a specific revision
+kubectl rollout pause deployment/DEPLOY_NAME          Pause a deployment rollout
+kubectl rollout resume deployment/DEPLOY_NAME         Resume a paused deployment rollout
+kubectl edit deployment DEPLOY_NAME                   Edit deployment live in default editor
+kubectl get deployment DEPLOY_NAME -o yaml            Get deployment definition as YAML
+
+--- SERVICES ---
+kubectl get services                                  List all services in default namespace
+kubectl get svc                                       Short form to list services
+kubectl get svc -n myapp                              List services in a specific namespace
+kubectl describe service SVC_NAME                     Show detailed info about a service
+kubectl apply -f service.yaml                         Create or update a service from YAML file
+kubectl delete service SVC_NAME                       Delete a service
+kubectl expose deployment DEPLOY_NAME --port=80 --type=ClusterIP   Expose a deployment as ClusterIP
+kubectl expose deployment DEPLOY_NAME --port=80 --type=NodePort     Expose as NodePort
+kubectl expose deployment DEPLOY_NAME --port=80 --type=LoadBalancer Expose as LoadBalancer
+kubectl port-forward svc/SVC_NAME 8080:80             Forward local port to a service port
+
+--- INGRESS ---
+kubectl get ingress                                   List all ingress resources
+kubectl get ingress -n myapp                          List ingress in a specific namespace
+kubectl describe ingress INGRESS_NAME                 Show detailed ingress information
+kubectl apply -f ingress.yaml                         Create or update ingress from YAML
+kubectl delete ingress INGRESS_NAME                   Delete an ingress resource
+
+--- CONFIGMAPS & SECRETS ---
+kubectl get configmaps                                List all configmaps
+kubectl get cm                                        Short form to list configmaps
+kubectl describe configmap CM_NAME                    Show configmap contents
+kubectl create configmap myconfig --from-literal=key=value    Create configmap from literal value
+kubectl create configmap myconfig --from-file=config.conf     Create configmap from a file
+kubectl apply -f configmap.yaml                       Create or update configmap from YAML
+kubectl delete configmap CM_NAME                      Delete a configmap
+kubectl get secrets                                   List all secrets
+kubectl describe secret SECRET_NAME                   Show secret metadata (not values)
+kubectl get secret SECRET_NAME -o jsonpath='{.data.password}' | base64 -d   Decode secret value
+kubectl create secret generic mysecret --from-literal=password=admin123      Create a secret
+kubectl create secret docker-registry regcred --docker-server=SERVER --docker-username=USER --docker-password=PASS   Create registry secret
+kubectl delete secret SECRET_NAME                     Delete a secret
+
+--- PERSISTENT VOLUMES ---
+kubectl get pv                                        List all persistent volumes
+kubectl get pvc                                       List all persistent volume claims
+kubectl get pvc -n myapp                              List PVCs in a specific namespace
+kubectl describe pvc PVC_NAME                         Show details of a PVC
+kubectl apply -f pvc.yaml                             Create a PVC from YAML
+kubectl delete pvc PVC_NAME                           Delete a PVC
+
+--- STATEFULSETS & DAEMONSETS ---
+kubectl get statefulsets                              List all statefulsets
+kubectl get sts                                       Short form to list statefulsets
+kubectl get daemonsets                                List all daemonsets
+kubectl get ds                                        Short form to list daemonsets
+kubectl get ds -A                                     List daemonsets across all namespaces
+kubectl describe ds DS_NAME                           Show details of a daemonset
+
+--- JOBS & CRONJOBS ---
+kubectl get jobs                                      List all jobs
+kubectl get cronjobs                                  List all cronjobs
+kubectl get cj                                        Short form to list cronjobs
+kubectl describe job JOB_NAME                         Show details of a job
+kubectl create job myjob --image=busybox -- echo hi   Create a one-time job
+kubectl delete job JOB_NAME                           Delete a job and its pods
+
+--- RESOURCE MANAGEMENT ---
+kubectl apply -f .                                    Apply all YAML files in current directory
+kubectl apply -f ./manifests/                         Apply all YAMLs in a directory
+kubectl apply -f https://url/file.yaml               Apply a remote YAML file directly
+kubectl delete -f deployment.yaml                     Delete resources defined in a YAML file
+kubectl delete -f .                                   Delete all resources from current directory
+kubectl apply --dry-run=client -f deployment.yaml     Preview what would be created without applying
+kubectl diff -f deployment.yaml                       Show diff between live and YAML state
+kubectl get events                                    Show recent events in default namespace
+kubectl get events -n myapp --sort-by='.lastTimestamp' Show namespace events sorted by time
+kubectl explain deployment.spec                       Show documentation for a resource field
+
+--- LABELS & SELECTORS ---
+kubectl label pod POD_NAME env=production             Add a label to a pod
+kubectl label pod POD_NAME env-                       Remove a label from a pod
+kubectl annotate pod POD_NAME description="my pod"   Add an annotation to a pod
+kubectl get pods -l app=nginx,env=prod               Filter resources by multiple labels
+
+--- RBAC ---
+kubectl get roles -n myapp                            List roles in a namespace
+kubectl get clusterroles                              List all cluster-wide roles
+kubectl get rolebindings -n myapp                     List role bindings in a namespace
+kubectl get clusterrolebindings                       List all cluster role bindings
+kubectl describe clusterrole admin                    Show permissions of a cluster role
+kubectl auth can-i create pods                        Check if current user can create pods
+kubectl auth can-i create pods --as=USER              Check permissions for a specific user
+
+--- HORIZONTAL POD AUTOSCALER ---
+kubectl get hpa                                       List all HPAs
+kubectl describe hpa HPA_NAME                         Show HPA details and current metrics
+kubectl delete hpa HPA_NAME                           Delete an HPA
+
+--- TROUBLESHOOTING ---
+kubectl get pods -A | grep -v Running                 Find all pods that are not running
+kubectl describe pod POD_NAME | grep -A5 Events       Show recent events for a pod
+kubectl get pod POD_NAME -o yaml | grep -A5 status    Check pod status in raw YAML
+kubectl logs POD_NAME --previous                      Get logs from crashed container
+kubectl exec -it POD_NAME -- nslookup kubernetes      Test DNS resolution inside a pod
+kubectl exec -it POD_NAME -- curl http://svc-name     Test service connectivity from inside pod
+kubectl run -it --rm debug --image=nicolaka/netshoot -- bash  Run full networking debug pod
+kubectl get endpoints SVC_NAME                        Check if service has active pod endpoints
+kubectl get componentstatuses                         Check health of cluster control plane
+
+
+==============================================================
+ 6. HELM
+==============================================================
+
+--- INSTALLATION & VERSION ---
+helm version                                          Show Helm version installed
+helm env                                              Show Helm environment variables and paths
+
+--- REPOSITORY MANAGEMENT ---
+helm repo add stable https://charts.helm.sh/stable    Add a Helm chart repository
+helm repo add bitnami https://charts.bitnami.com/bitnami  Add the Bitnami repository
+helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx  Add ingress-nginx repo
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts  Add Prometheus repo
+helm repo add elastic https://helm.elastic.co         Add the Elastic repository
+helm repo add jetstack https://charts.jetstack.io     Add the Jetstack cert-manager repo
+helm repo add argo https://argoproj.github.io/argo-helm  Add the Argo repository
+helm repo list                                        List all added repositories
+helm repo update                                      Fetch latest chart lists from all repos
+helm repo remove stable                               Remove a repository from the list
+helm search repo nginx                                Search all repos for charts matching nginx
+helm search repo nginx --versions                     Show all available versions of a chart
+helm search hub nginx                                 Search the public Artifact Hub for charts
+
+--- INSTALLING CHARTS ---
+helm install RELEASE_NAME CHART                       Install a chart with a release name
+helm install myapp bitnami/nginx                      Install nginx chart from bitnami repo
+helm install myapp bitnami/nginx --namespace mynamespace  Install into a specific namespace
+helm install myapp bitnami/nginx --create-namespace   Create namespace if it does not exist
+helm install myapp bitnami/nginx --version 15.0.0     Install a specific chart version
+helm install myapp bitnami/nginx --set service.type=ClusterIP  Override a single value
+helm install myapp bitnami/nginx --set-string key=value  Set a string value override
+helm install myapp bitnami/nginx -f values.yaml       Install using custom values file
+helm install myapp bitnami/nginx -f prod.yaml -f override.yaml  Use multiple values files
+helm install myapp ./mychart                          Install a chart from a local directory
+helm install myapp ./mychart --dry-run               Preview what will be created without applying
+helm install myapp ./mychart --debug                 Show full debug output during install
+
+--- UPGRADING & ROLLBACK ---
+helm upgrade RELEASE_NAME CHART                       Upgrade an existing release
+helm upgrade myapp bitnami/nginx -f values.yaml       Upgrade with new values file
+helm upgrade myapp bitnami/nginx --set key=value      Upgrade with inline value override
+helm upgrade --install myapp bitnami/nginx            Install if not exists, upgrade if exists
+helm upgrade myapp bitnami/nginx --atomic             Rollback automatically if upgrade fails
+helm upgrade myapp bitnami/nginx --cleanup-on-fail    Delete new resources on upgrade failure
+helm rollback myapp                                   Rollback release to previous version
+helm rollback myapp 2                                 Rollback release to specific revision 2
+helm history myapp                                    Show revision history of a release
+
+--- INSPECTING RELEASES ---
+helm list                                             List all installed releases in default namespace
+helm list -n myapp                                    List releases in a specific namespace
+helm list -A                                          List releases across all namespaces
+helm list --failed                                    List only failed releases
+helm status myapp                                     Show status of an installed release
+helm status myapp -n myapp                            Show status in a specific namespace
+helm get all myapp                                    Get all information about a release
+helm get values myapp                                 Show user-supplied values for a release
+helm get values myapp --all                           Show all values including defaults
+helm get manifest myapp                               Show rendered Kubernetes manifests
+helm get notes myapp                                  Show post-install notes of a release
+
+--- UNINSTALLING ---
+helm uninstall myapp                                  Uninstall a release and delete all resources
+helm uninstall myapp -n myapp                         Uninstall from a specific namespace
+helm uninstall myapp --keep-history                   Uninstall but keep release history
+
+--- CREATING & PACKAGING CHARTS ---
+helm create mychart                                   Create a new chart with default template structure
+helm lint mychart                                     Check chart for errors and best practices
+helm template myapp ./mychart                         Render chart templates locally without installing
+helm template myapp ./mychart -f values.yaml          Render with custom values
+helm package mychart                                  Package chart into a .tgz archive file
+helm package mychart --version 1.0.0                 Package with a specific version
+helm dependency update mychart                        Download chart dependencies listed in Chart.yaml
+helm dependency list mychart                          List all chart dependencies
+
+--- CHART STRUCTURE ---
+mychart/
+  Chart.yaml                                          Chart metadata (name, version, description)
+  values.yaml                                         Default configuration values for the chart
+  charts/                                             Directory for dependency charts
+  templates/                                          Directory for Kubernetes manifest templates
+  templates/deployment.yaml                           Deployment template using {{ .Values.x }}
+  templates/service.yaml                              Service template
+  templates/ingress.yaml                              Ingress template
+  templates/NOTES.txt                                 Post-install instructions shown to user
+  templates/_helpers.tpl                              Reusable template helper functions
+  .helmignore                                         Files to exclude when packaging chart
+
+--- CHART.YAML FIELDS ---
+apiVersion: v2                                        Helm chart API version (v2 for Helm 3)
+name: mychart                                         Name of the chart
+description: My application chart                     Short description of the chart
+type: application                                     Chart type: application or library
+version: 0.1.0                                        Chart version (SemVer)
+appVersion: "1.0.0"                                   Version of the application inside the chart
+dependencies:                                         List of required sub-charts
+  - name: postgresql
+    version: "12.x.x"
+    repository: https://charts.bitnami.com/bitnami
+
+--- VALUES.YAML USAGE ---
+replicaCount: 2                                       Set default replica count value
+image:
+  repository: nginx                                   Image repository name
+  tag: "1.27"                                         Image tag
+  pullPolicy: IfNotPresent                            When to pull the image
+service:
+  type: ClusterIP                                     Service type
+  port: 80                                            Service port
+ingress:
+  enabled: false                                      Toggle ingress on or off
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+--- TEMPLATE FUNCTIONS ---
+{{ .Values.replicaCount }}                            Reference a value from values.yaml
+{{ .Release.Name }}                                   Release name used during helm install
+{{ .Release.Namespace }}                              Namespace the chart is installed into
+{{ .Chart.Name }}                                     Name of the chart from Chart.yaml
+{{ .Chart.Version }}                                  Chart version from Chart.yaml
+{{ include "mychart.fullname" . }}                    Call a named helper template
+{{ if .Values.ingress.enabled }}                      Conditional rendering of a block
+{{ range .Values.env }}                               Loop over a list of values
+{{ default "latest" .Values.image.tag }}              Use default if value is not set
+{{ required "image.tag is required" .Values.image.tag }}  Fail if required value is missing
+{{ toYaml .Values.resources | indent 10 }}            Convert value to YAML and indent it
+{{ quote .Values.image.tag }}                         Wrap value in double quotes
+{{ upper .Values.name }}                              Convert string to uppercase
+
+--- PLUGIN MANAGEMENT ---
+helm plugin list                                      List all installed Helm plugins
+helm plugin install https://github.com/xxx/plugin     Install a plugin from URL
+helm plugin uninstall PLUGIN_NAME                     Uninstall a plugin
+helm plugin update PLUGIN_NAME                        Update an installed plugin
+
+--- COMMON PATTERNS ---
+helm repo update && helm upgrade --install myapp repo/chart -f values.yaml   Update repo then install or upgrade
+helm template myapp ./mychart | kubectl apply -f -   Render templates and pipe directly to kubectl
+helm list -A | grep failed                            Find all failed releases across namespaces
+helm get values myapp > current-values.yaml          Export current values to a file for editing
+
+
+==============================================================
+ 7. TERRAFORM
+==============================================================
+
+--- VERSION & SETUP ---
+terraform version                                     Show installed Terraform version
+terraform -install-autocomplete                       Install shell tab completion
+export TF_LOG=DEBUG                                   Enable debug level logging
+export TF_LOG=INFO                                    Enable info level logging
+export TF_LOG_PATH=terraform.log                      Write logs to a file
+export TF_VAR_password=secret                         Pass a variable value via environment
+unset TF_LOG                                          Disable logging
+
+--- CORE WORKFLOW ---
+terraform init                                        Initialize working directory and download providers
+terraform init -upgrade                               Upgrade provider plugins to latest allowed version
+terraform init -reconfigure                           Reinitialize and ignore existing backend config
+terraform init -migrate-state                         Migrate state to new backend during init
+terraform validate                                    Check configuration files for syntax errors
+terraform fmt                                         Format all .tf files to canonical style
+terraform fmt -recursive                              Format all .tf files in subdirectories too
+terraform fmt -check                                  Check formatting without making changes
+terraform plan                                        Show what changes will be made without applying
+terraform plan -out=tfplan                            Save plan to a file for later apply
+terraform plan -var="region=us-east-1"               Pass a variable value during plan
+terraform plan -var-file="prod.tfvars"               Use a specific variable file for plan
+terraform plan -target=aws_instance.web              Plan only a specific resource
+terraform apply                                       Apply changes to real infrastructure
+terraform apply -auto-approve                         Apply without interactive yes/no confirmation
+terraform apply tfplan                                Apply a previously saved plan file
+terraform apply -var="region=us-east-1"              Apply with an inline variable override
+terraform apply -var-file="prod.tfvars"              Apply with a specific variable file
+terraform apply -target=aws_instance.web             Apply only a specific resource
+terraform apply -parallelism=20                       Run up to 20 concurrent operations
+terraform destroy                                     Destroy all managed infrastructure
+terraform destroy -auto-approve                       Destroy without confirmation prompt
+terraform destroy -target=aws_instance.web           Destroy only a specific resource
+
+--- STATE MANAGEMENT ---
+terraform show                                        Show current state in human readable format
+terraform show -json                                  Show state in JSON format
+terraform state list                                  List all resources tracked in state
+terraform state show aws_instance.web                Show details of a specific resource in state
+terraform state mv aws_instance.old aws_instance.new Rename a resource in state without destroying
+terraform state rm aws_instance.web                  Remove a resource from state without destroying it
+terraform state pull                                  Download and print remote state to stdout
+terraform state push terraform.tfstate               Upload local state to remote backend
+terraform refresh                                     Update state to match real infrastructure
+terraform output                                      Show all output values
+terraform output instance_ip                          Show a specific output value
+terraform output -json                                Show all outputs in JSON format
+terraform output -raw instance_ip                     Show raw output value without quotes
+
+--- WORKSPACE MANAGEMENT ---
+terraform workspace list                              List all workspaces
+terraform workspace show                              Show current active workspace
+terraform workspace new staging                       Create a new workspace called staging
+terraform workspace select staging                    Switch to the staging workspace
+terraform workspace delete staging                    Delete a workspace
+
+--- IMPORT & REPLACE ---
+terraform import aws_instance.web i-1234567890       Import existing resource into state
+terraform import -var-file="prod.tfvars" aws_s3_bucket.mybucket my-bucket  Import with variables
+terraform plan -replace=aws_instance.web             Plan to force replace a specific resource
+terraform apply -replace=aws_instance.web            Force recreate a specific resource
+
+--- GRAPH & DEPENDENCIES ---
+terraform graph                                       Output dependency graph in DOT format
+terraform graph | dot -Tsvg > graph.svg              Generate visual dependency graph as SVG
+
+--- PROVIDERS ---
+terraform providers                                   Show providers required by configuration
+terraform providers lock                              Create or update dependency lock file
+terraform providers mirror ./mirror_dir              Download provider binaries to local directory
+
+--- MODULES ---
+terraform get                                         Download and install modules from registry
+terraform get -update                                 Update modules to latest versions
+module "vpc" { source = "./modules/vpc" }             Reference a local module
+module "vpc" { source = "terraform-aws-modules/vpc/aws" version = "5.0.0" } Use registry module
+
+--- BACKEND CONFIGURATION ---
+backend "s3" {                                        Store state in AWS S3
+  bucket         = "my-tfstate-bucket"
+  key            = "prod/terraform.tfstate"
+  region         = "ap-south-1"
+  dynamodb_table = "terraform-locks"                  DynamoDB table for state locking
+  encrypt        = true
+}
+backend "local" { path = "terraform.tfstate" }       Store state locally (default)
+
+--- VARIABLES ---
+variable "region" {                                   Declare an input variable
+  description = "AWS region"
+  type        = string
+  default     = "ap-south-1"
+}
+variable "db_password" {
+  type      = string
+  sensitive = true                                    Mark variable as sensitive to hide in logs
+}
+var.region                                            Reference a variable in configuration
+var.db_password                                       Reference a sensitive variable
+locals { name = "myapp-${var.env}" }                 Define a local computed value
+local.name                                            Reference a local value
+
+--- OUTPUTS ---
+output "instance_ip" {                                Declare an output value
+  description = "Public IP of EC2 instance"
+  value       = aws_instance.web.public_ip
+}
+output "db_password" {
+  value     = var.db_password
+  sensitive = true                                    Hide output value in logs
+}
+
+--- COMMON RESOURCE PATTERNS ---
+data "aws_ami" "ubuntu" {                             Look up existing resource without managing it
+  most_recent = true
+  owners      = ["099720109477"]
+  filter { name = "name" values = ["ubuntu/images/*22.04*"] }
+}
+resource "aws_instance" "web" {
+  ami           = data.aws_ami.ubuntu.id              Reference data source output
+  instance_type = var.instance_type                   Reference a variable
+  tags          = { Name = "${local.name}-server" }   Use local value in tag
+  depends_on    = [aws_vpc.main]                      Explicitly declare dependency
+  lifecycle { prevent_destroy = true }                Prevent accidental destroy
+  lifecycle { create_before_destroy = true }          Create replacement before destroying old
+  lifecycle { ignore_changes = [tags] }               Ignore changes to specific attributes
+}
+
+--- EXPRESSIONS & FUNCTIONS ---
+count = var.create ? 1 : 0                            Conditional resource creation
+for_each = toset(var.buckets)                         Create one resource per item in a set
+element(list, index)                                  Get element at index from a list
+length(var.subnets)                                   Get length of a list or map
+toset(["a","b","c"])                                  Convert list to set removing duplicates
+tolist(var.set)                                       Convert set to list
+tomap({key = "value"})                                Convert object to map
+lookup(map, key, default)                             Look up a key in a map with default fallback
+merge(map1, map2)                                     Merge two maps together
+flatten(list_of_lists)                                Flatten nested lists into a single list
+jsonencode({key = "value"})                           Convert HCL object to JSON string
+file("userdata.sh")                                   Read contents of a file as string
+templatefile("tpl.sh", { name = var.name })           Render a template file with variables
+cidrsubnet("10.0.0.0/16", 8, 1)                       Calculate a subnet CIDR
+
+--- TROUBLESHOOTING ---
+terraform plan -detailed-exitcode                     Return exit code 2 if there are changes
+TF_LOG=TRACE terraform apply                          Run apply with maximum trace logging
+terraform force-unlock LOCK_ID                        Manually release a stuck state lock
+terraform taint aws_instance.web                      Mark resource for recreation on next apply (deprecated use -replace)
+terraform untaint aws_instance.web                    Remove taint from a resource
+
+
+==============================================================
+ 8. AWS CLI
+==============================================================
+
+--- SETUP & CONFIGURATION ---
+aws --version                                         Show installed AWS CLI version
+aws configure                                         Set up access key, secret, region interactively
+aws configure --profile myprofile                     Set up a named profile
+aws configure list                                    Show current configuration settings
+aws configure list-profiles                           List all configured profiles
+aws sts get-caller-identity                           Verify current credentials and account ID
+aws sts assume-role --role-arn ARN --role-session-name name  Assume an IAM role
+export AWS_PROFILE=myprofile                          Switch to a named profile for current session
+export AWS_DEFAULT_REGION=ap-south-1                  Set default region for current session
+
+--- EC2 ---
+aws ec2 describe-instances                                    List all EC2 instances
+aws ec2 describe-instances --region ap-south-1               List instances in a specific region
+aws ec2 describe-instances --filters "Name=tag:Name,Values=web-server"  Filter by tag
+aws ec2 describe-instances --instance-ids i-1234567890       Get details of a specific instance
+aws ec2 describe-instances --query 'Reservations[*].Instances[*].[InstanceId,State.Name,PublicIpAddress]' --output table  Formatted table output
+aws ec2 start-instances --instance-ids i-1234567890          Start a stopped instance
+aws ec2 stop-instances --instance-ids i-1234567890           Stop a running instance
+aws ec2 reboot-instances --instance-ids i-1234567890         Reboot an instance
+aws ec2 terminate-instances --instance-ids i-1234567890      Terminate an instance permanently
+aws ec2 describe-instance-status --instance-ids i-123        Check instance health status
+aws ec2 run-instances --image-id ami-xxx --instance-type t2.micro --key-name mykey --count 1  Launch a new instance
+aws ec2 describe-images --owners amazon --filters "Name=name,Values=ubuntu*22.04*"  Find AMIs
+aws ec2 describe-key-pairs                                    List all key pairs
+aws ec2 create-key-pair --key-name mykey --query 'KeyMaterial' --output text > mykey.pem  Create key pair
+aws ec2 delete-key-pair --key-name mykey                     Delete a key pair
+aws ec2 describe-security-groups                             List all security groups
+aws ec2 create-security-group --group-name mysg --description "My SG" --vpc-id vpc-xxx  Create security group
+aws ec2 authorize-security-group-ingress --group-id sg-xxx --protocol tcp --port 80 --cidr 0.0.0.0/0  Add inbound rule
+aws ec2 revoke-security-group-ingress --group-id sg-xxx --protocol tcp --port 80 --cidr 0.0.0.0/0   Remove inbound rule
+aws ec2 delete-security-group --group-id sg-xxx              Delete a security group
+aws ec2 describe-vpcs                                        List all VPCs
+aws ec2 describe-subnets                                     List all subnets
+aws ec2 describe-route-tables                                List all route tables
+aws ec2 allocate-address                                     Allocate a new Elastic IP
+aws ec2 associate-address --instance-id i-xxx --allocation-id eipalloc-xxx  Associate Elastic IP
+aws ec2 release-address --allocation-id eipalloc-xxx        Release an Elastic IP
+
+--- S3 ---
+aws s3 ls                                             List all S3 buckets
+aws s3 ls s3://mybucket                               List contents of a bucket
+aws s3 ls s3://mybucket/folder/ --recursive           List all objects recursively
+aws s3 mb s3://mybucket --region ap-south-1           Create a new bucket
+aws s3 rb s3://mybucket                               Remove an empty bucket
+aws s3 rb s3://mybucket --force                       Remove a bucket and all its contents
+aws s3 cp file.txt s3://mybucket/file.txt             Upload a file to S3
+aws s3 cp s3://mybucket/file.txt ./file.txt           Download a file from S3
+aws s3 cp s3://mybucket/ . --recursive                Download all files from a bucket
+aws s3 mv file.txt s3://mybucket/file.txt             Move a file to S3 and delete local copy
+aws s3 rm s3://mybucket/file.txt                      Delete a single object from S3
+aws s3 rm s3://mybucket/ --recursive                  Delete all objects in a bucket
+aws s3 sync ./local-folder s3://mybucket              Sync local folder to S3 (upload new/changed)
+aws s3 sync s3://mybucket ./local-folder              Sync S3 bucket to local folder
+aws s3 sync ./dist s3://mybucket --delete             Sync and delete files removed locally
+aws s3 presign s3://mybucket/file.txt --expires-in 3600  Generate pre-signed URL valid for 1 hour
+aws s3api put-bucket-versioning --bucket mybucket --versioning-configuration Status=Enabled  Enable versioning
+aws s3api get-bucket-location --bucket mybucket       Get the region of a bucket
+aws s3api put-public-access-block --bucket mybucket --public-access-block-configuration BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true  Block all public access
+
+--- IAM ---
+aws iam list-users                                    List all IAM users
+aws iam get-user --user-name myuser                   Get details of a specific user
+aws iam create-user --user-name myuser                Create a new IAM user
+aws iam delete-user --user-name myuser                Delete an IAM user
+aws iam create-access-key --user-name myuser          Create access key for a user
+aws iam delete-access-key --user-name myuser --access-key-id AKID  Delete an access key
+aws iam list-access-keys --user-name myuser           List access keys for a user
+aws iam list-groups                                   List all IAM groups
+aws iam create-group --group-name devops              Create an IAM group
+aws iam add-user-to-group --user-name myuser --group-name devops  Add user to a group
+aws iam remove-user-from-group --user-name myuser --group-name devops  Remove user from group
+aws iam list-roles                                    List all IAM roles
+aws iam get-role --role-name myrole                   Get details of a specific role
+aws iam create-role --role-name myrole --assume-role-policy-document file://trust.json  Create a role
+aws iam delete-role --role-name myrole                Delete an IAM role
+aws iam attach-role-policy --role-name myrole --policy-arn arn:aws:iam::aws:policy/AmazonS3FullAccess  Attach policy to role
+aws iam detach-role-policy --role-name myrole --policy-arn arn:aws:iam::aws:policy/AmazonS3FullAccess  Detach policy from role
+aws iam list-attached-role-policies --role-name myrole  List policies attached to a role
+aws iam list-policies --scope Local                   List all custom IAM policies
+aws iam create-policy --policy-name mypolicy --policy-document file://policy.json  Create a custom policy
+aws iam get-policy --policy-arn arn:aws:iam::123456789:policy/mypolicy  Get policy details
+aws iam delete-policy --policy-arn arn:aws:iam::123456789:policy/mypolicy  Delete a policy
+
+--- EKS ---
+aws eks list-clusters                                 List all EKS clusters
+aws eks describe-cluster --name mycluster             Show details of a specific cluster
+aws eks update-kubeconfig --name mycluster --region ap-south-1  Configure kubectl for a cluster
+aws eks list-nodegroups --cluster-name mycluster      List all node groups in a cluster
+aws eks describe-nodegroup --cluster-name mycluster --nodegroup-name workers  Show node group details
+aws eks create-cluster --name mycluster --role-arn ARN --resources-vpc-config subnetIds=s-1,s-2,securityGroupIds=sg-1  Create cluster
+aws eks delete-cluster --name mycluster              Delete an EKS cluster
+aws eks update-cluster-version --name mycluster --kubernetes-version 1.29  Upgrade Kubernetes version
+aws eks list-addons --cluster-name mycluster         List installed EKS addons
+aws eks create-addon --cluster-name mycluster --addon-name vpc-cni  Install a cluster addon
+
+--- VPC & NETWORKING ---
+aws ec2 describe-vpcs                                 List all VPCs
+aws ec2 create-vpc --cidr-block 10.0.0.0/16          Create a new VPC
+aws ec2 delete-vpc --vpc-id vpc-xxx                  Delete a VPC
+aws ec2 create-subnet --vpc-id vpc-xxx --cidr-block 10.0.1.0/24 --availability-zone ap-south-1a  Create subnet
+aws ec2 create-internet-gateway                       Create an internet gateway
+aws ec2 attach-internet-gateway --internet-gateway-id igw-xxx --vpc-id vpc-xxx  Attach IGW to VPC
+aws ec2 create-nat-gateway --subnet-id subnet-xxx --allocation-id eipalloc-xxx  Create NAT gateway
+aws ec2 create-route-table --vpc-id vpc-xxx           Create a route table
+aws ec2 create-route --route-table-id rtb-xxx --destination-cidr-block 0.0.0.0/0 --gateway-id igw-xxx  Add route
+
+--- RDS ---
+aws rds describe-db-instances                         List all RDS instances
+aws rds describe-db-instances --db-instance-identifier mydb  Get details of a specific DB
+aws rds create-db-instance --db-instance-identifier mydb --db-instance-class db.t3.micro --engine mysql --master-username admin --master-user-password pass123 --allocated-storage 20  Create RDS instance
+aws rds delete-db-instance --db-instance-identifier mydb --skip-final-snapshot  Delete a DB instance
+aws rds reboot-db-instance --db-instance-identifier mydb  Reboot an RDS instance
+aws rds create-db-snapshot --db-instance-identifier mydb --db-snapshot-identifier mysnap  Create snapshot
+aws rds describe-db-snapshots --db-instance-identifier mydb  List snapshots for a DB
+aws rds restore-db-instance-from-db-snapshot --db-instance-identifier newdb --db-snapshot-identifier mysnap  Restore from snapshot
+
+--- ECR ---
+aws ecr describe-repositories                         List all ECR repositories
+aws ecr create-repository --repository-name myapp    Create a new ECR repository
+aws ecr delete-repository --repository-name myapp --force  Delete a repository and all images
+aws ecr list-images --repository-name myapp          List all images in a repository
+aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin ACCOUNT.dkr.ecr.ap-south-1.amazonaws.com  Authenticate Docker with ECR
+aws ecr batch-delete-image --repository-name myapp --image-ids imageTag=latest  Delete a specific image
+
+--- CLOUDWATCH ---
+aws cloudwatch list-metrics                           List available CloudWatch metrics
+aws cloudwatch get-metric-statistics --namespace AWS/EC2 --metric-name CPUUtilization --dimensions Name=InstanceId,Value=i-xxx --start-time 2024-01-01T00:00:00Z --end-time 2024-01-02T00:00:00Z --period 3600 --statistics Average  Get EC2 CPU stats
+aws cloudwatch describe-alarms                        List all CloudWatch alarms
+aws cloudwatch put-metric-alarm --alarm-name high-cpu --metric-name CPUUtilization --namespace AWS/EC2 --statistic Average --period 300 --threshold 80 --comparison-operator GreaterThanThreshold --evaluation-periods 2 --alarm-actions arn:aws:sns:xxx  Create CPU alarm
+aws cloudwatch delete-alarms --alarm-names high-cpu   Delete a CloudWatch alarm
+aws logs describe-log-groups                          List all CloudWatch log groups
+aws logs describe-log-streams --log-group-name /aws/eks/mycluster/cluster  List log streams
+aws logs get-log-events --log-group-name /aws/eks/mycluster/cluster --log-stream-name stream-name  Get log events
+aws logs tail /aws/eks/mycluster/cluster --follow     Follow live logs from a log group
+
+--- ROUTE 53 ---
+aws route53 list-hosted-zones                         List all hosted zones
+aws route53 get-hosted-zone --id ZONE_ID              Get details of a hosted zone
+aws route53 list-resource-record-sets --hosted-zone-id ZONE_ID  List all DNS records
+aws route53 change-resource-record-sets --hosted-zone-id ZONE_ID --change-batch file://record.json  Create or update DNS record
+
+--- SNS ---
+aws sns list-topics                                   List all SNS topics
+aws sns create-topic --name mytopic                   Create a new SNS topic
+aws sns subscribe --topic-arn arn:aws:sns:xxx:mytopic --protocol email --notification-endpoint user@email.com  Subscribe email to topic
+aws sns publish --topic-arn arn:aws:sns:xxx:mytopic --message "Hello"  Publish message to a topic
+aws sns delete-topic --topic-arn arn:aws:sns:xxx:mytopic  Delete an SNS topic
+
+--- SQS ---
+aws sqs list-queues                                   List all SQS queues
+aws sqs create-queue --queue-name myqueue             Create a new SQS queue
+aws sqs send-message --queue-url URL --message-body "Hello"  Send a message to a queue
+aws sqs receive-message --queue-url URL               Receive messages from a queue
+aws sqs delete-message --queue-url URL --receipt-handle HANDLE  Delete a received message
+aws sqs delete-queue --queue-url URL                  Delete an SQS queue
+
+--- SECRETS MANAGER ---
+aws secretsmanager list-secrets                       List all secrets
+aws secretsmanager create-secret --name mydb/password --secret-string "mysecretpass"  Create a secret
+aws secretsmanager get-secret-value --secret-id mydb/password  Get secret value
+aws secretsmanager update-secret --secret-id mydb/password --secret-string "newpass"  Update a secret
+aws secretsmanager delete-secret --secret-id mydb/password --force-delete-without-recovery  Delete a secret
+
+--- OUTPUT FORMATTING ---
+aws ec2 describe-instances --output table             Display output as a formatted table
+aws ec2 describe-instances --output json              Display output as JSON (default)
+aws ec2 describe-instances --output text              Display output as plain text
+aws ec2 describe-instances --query 'Reservations[0].Instances[0].PublicIpAddress'  Extract specific field using JMESPath
+aws ec2 describe-instances --query 'Reservations[*].Instances[*].[InstanceId,State.Name]' --output table  Multiple fields as table
+
+--- COMMON PATTERNS ---
+aws ec2 describe-instances --query 'Reservations[*].Instances[?State.Name==`running`].InstanceId' --output text   List only running instance IDs
+aws s3 sync ./dist s3://mybucket --delete --cache-control "max-age=31536000"  Deploy static website with cache headers
+aws sts get-caller-identity --query Account --output text   Get current AWS account ID only
+
+
+==============================================================
+ 9. JENKINS
+==============================================================
+
+--- JENKINS CLI ---
+java -jar jenkins-cli.jar -s http://localhost:8080 help              List all available CLI commands
+java -jar jenkins-cli.jar -s http://localhost:8080 version           Show Jenkins server version
+java -jar jenkins-cli.jar -s http://localhost:8080 list-jobs         List all jobs on the server
+java -jar jenkins-cli.jar -s http://localhost:8080 build JOBNAME     Trigger a build for a job
+java -jar jenkins-cli.jar -s http://localhost:8080 console JOBNAME   Get console output of last build
+java -jar jenkins-cli.jar -s http://localhost:8080 delete-job JOBNAME  Delete a job
+java -jar jenkins-cli.jar -s http://localhost:8080 disable-job JOBNAME  Disable a job
+java -jar jenkins-cli.jar -s http://localhost:8080 enable-job JOBNAME   Enable a disabled job
+java -jar jenkins-cli.jar -s http://localhost:8080 reload-configuration  Reload Jenkins from disk
+java -jar jenkins-cli.jar -s http://localhost:8080 safe-restart      Restart Jenkins after builds complete
+java -jar jenkins-cli.jar -s http://localhost:8080 restart           Restart Jenkins immediately
+java -jar jenkins-cli.jar -s http://localhost:8080 shutdown          Shutdown Jenkins server
+
+--- DECLARATIVE PIPELINE STRUCTURE ---
+pipeline {                                            Root block of a declarative pipeline
+  agent any                                           Run pipeline on any available agent
+  agent none                                          No global agent - each stage defines its own
+  agent { label 'docker' }                            Run on agent with specific label
+  agent { docker { image 'python:3.11' } }            Run inside a Docker container
+
+  environment {                                       Define environment variables for all stages
+    IMAGE_TAG = "${GIT_COMMIT[0..7]}"                 Use git commit SHA as image tag
+    NEXUS_URL = "http://nexus:8081"                   Set registry URL
+  }
+
+  options {
+    buildDiscarder(logRotator(numToKeepStr: '10'))    Keep only last 10 build logs
+    timeout(time: 30, unit: 'MINUTES')               Abort pipeline if it runs over 30 minutes
+    disableConcurrentBuilds()                         Prevent multiple builds running at same time
+    retry(2)                                          Retry entire pipeline twice on failure
+    timestamps()                                      Add timestamps to console output
+  }
+
+  parameters {
+    string(name: 'BRANCH', defaultValue: 'main', description: 'Branch to build')
+    booleanParam(name: 'DEPLOY', defaultValue: true, description: 'Deploy after build?')
+    choice(name: 'ENV', choices: ['dev','staging','prod'], description: 'Target environment')
+  }
+
+  triggers {
+    pollSCM('H/5 * * * *')                            Poll SCM every 5 minutes for changes
+    cron('H 2 * * 1-5')                               Schedule build at 2am Mon-Fri
+    upstream(upstreamProjects: 'other-job', threshold: hudson.model.Result.SUCCESS)
+  }
+
+  stages {
+    stage('Checkout') {
+      steps {
+        checkout scm                                  Checkout source code from configured SCM
+        git url: 'https://github.com/org/repo.git', branch: 'main'  Checkout specific repo
+      }
+    }
+
+    stage('Build') {
+      steps {
+        sh 'docker build -t myapp:${IMAGE_TAG} .'    Run shell command
+        sh """                                        Multi-line shell block
+          echo "Building version ${IMAGE_TAG}"
+          docker build -t myapp:${IMAGE_TAG} .
+        """
+        bat 'mvn clean package'                       Run Windows batch command
+        echo "Build complete"                          Print message to console
+      }
+    }
+
+    stage('Test') {
+      steps {
+        sh 'pytest tests/'
+      }
+      post {
+        always {
+          junit 'test-results/*.xml'                  Publish JUnit test results
+          archiveArtifacts artifacts: '*.txt', allowEmptyArchive: true  Archive files
+        }
+      }
+    }
+
+    stage('SonarQube') {
+      steps {
+        withSonarQubeEnv('SonarQube') {              Use configured SonarQube server
+          sh 'sonar-scanner'
+        }
+      }
+    }
+
+    stage('Quality Gate') {
+      steps {
+        timeout(time: 5, unit: 'MINUTES') {
+          waitForQualityGate abortPipeline: true      Block until gate passes or abort
+        }
+      }
+    }
+
+    stage('Push Image') {
+      steps {
+        withCredentials([usernamePassword(           Securely inject credentials
+          credentialsId: 'nexus-creds',
+          usernameVariable: 'USER',
+          passwordVariable: 'PASS'
+        )]) {
+          sh 'echo $PASS | docker login nexus:8082 -u $USER --password-stdin'
+          sh 'docker push nexus:8082/myapp:${IMAGE_TAG}'
+        }
+      }
+    }
+
+    stage('Deploy') {
+      when {
+        branch 'main'                                 Run stage only on main branch
+      }
+      when {
+        expression { params.DEPLOY == true }          Run stage based on parameter value
+      }
+      steps {
+        withKubeConfig([credentialsId: 'kubeconfig']) {
+          sh 'kubectl set image deployment/app app=myapp:${IMAGE_TAG} -n production'
+          sh 'kubectl rollout status deployment/app -n production'
+        }
+      }
+    }
+
+    stage('Parallel Stage') {
+      parallel {                                      Run multiple stages simultaneously
+        stage('Unit Tests') { steps { sh 'pytest' } }
+        stage('Lint') { steps { sh 'flake8 .' } }
+        stage('Security') { steps { sh 'trivy fs .' } }
+      }
+    }
+  }
+
+  post {
+    always   { cleanWs() }                           Always clean workspace after build
+    success  { echo "Pipeline PASSED" }              Run on successful build
+    failure  { echo "Pipeline FAILED" }              Run on failed build
+    unstable { echo "Pipeline UNSTABLE" }            Run when build is unstable
+    aborted  { echo "Pipeline ABORTED" }             Run when build is manually aborted
+    changed  { echo "Build status changed" }         Run when status changes from previous build
+  }
+}
+
+--- USEFUL BUILT-IN VARIABLES ---
+env.BUILD_NUMBER                                      Current build number
+env.BUILD_URL                                         URL to the current build
+env.JOB_NAME                                          Name of the current job
+env.BRANCH_NAME                                       Branch being built (multibranch)
+env.GIT_COMMIT                                        Full git commit SHA
+env.GIT_BRANCH                                        Git branch name
+env.WORKSPACE                                         Absolute path to workspace directory
+env.STAGE_NAME                                        Name of current executing stage
+currentBuild.result                                   Current build result (SUCCESS/FAILURE)
+currentBuild.duration                                 Build duration in milliseconds
+currentBuild.currentResult                            Result so far in current build
+
+--- CREDENTIALS TYPES ---
+usernamePassword(credentialsId: 'id', usernameVariable: 'U', passwordVariable: 'P')  Username+password
+string(credentialsId: 'id', variable: 'TOKEN')        Secret text or token
+sshUserPrivateKey(credentialsId: 'id', keyFileVariable: 'KEY')  SSH private key file
+file(credentialsId: 'id', variable: 'CONFIG')         Secret file credential
+certificate(credentialsId: 'id', keystoreVariable: 'KS', passwordVariable: 'KP')  Certificate
+
+--- COMMON GROOVY IN PIPELINE ---
+def version = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()  Capture command output
+if (env.BRANCH_NAME == 'main') { }                   Conditional logic in pipeline
+try { sh 'command' } catch(e) { echo "Error: ${e}" } Try-catch error handling
+def list = ['a', 'b', 'c']                           Define a list
+list.each { item -> sh "echo ${item}" }              Loop over a list
+
+
+==============================================================
+ 10. GITHUB ACTIONS
+==============================================================
+
+--- WORKFLOW STRUCTURE ---
+name: CI Pipeline                                     Name shown in GitHub Actions UI
+
+on:                                                   Events that trigger the workflow
+  push:
+    branches: [main, develop]                         Trigger on push to these branches
+    paths: ['src/**', 'Dockerfile']                   Trigger only when these paths change
+  pull_request:
+    branches: [main]                                  Trigger on PR targeting main
+    types: [opened, synchronize, reopened]            Specific PR event types
+  schedule:
+    - cron: '0 2 * * 1-5'                            Scheduled trigger at 2am Mon-Fri UTC
+  workflow_dispatch:                                  Allow manual trigger from GitHub UI
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'staging'
+  workflow_call:                                      Allow this workflow to be called by others
+  release:
+    types: [published]                               Trigger when a release is published
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}     Group concurrent runs by branch
+  cancel-in-progress: true                           Cancel older run if new one starts
+
+--- JOBS & STEPS ---
+jobs:
+  build:
+    name: Build and Test                              Display name for the job
+    runs-on: ubuntu-latest                            Runner OS (ubuntu-latest, windows-latest, macos-latest)
+    runs-on: self-hosted                              Use self-hosted runner
+    timeout-minutes: 30                              Cancel job if it exceeds 30 minutes
+    continue-on-error: true                          Allow workflow to continue if job fails
+    needs: [test, lint]                              Run only after these jobs succeed
+    if: github.ref == 'refs/heads/main'             Run job only on main branch
+    if: github.event_name != 'pull_request'         Skip job for pull requests
+
+    permissions:
+      contents: read                                  Read repository contents
+      packages: write                                 Write packages to GitHub Packages
+      id-token: write                                 Required for OIDC authentication
+      security-events: write                          Required to upload SARIF security results
+
+    strategy:
+      matrix:
+        python-version: [3.10, 3.11, 3.12]           Run job for each Python version
+        os: [ubuntu-latest, macos-latest]             Run on multiple OS
+      fail-fast: false                                Do not cancel matrix jobs on first failure
+      max-parallel: 3                                 Limit parallel matrix jobs
+
+    environment:
+      name: production                               GitHub deployment environment
+      url: https://myapp.com                          URL shown in deployment
+
+    outputs:
+      image-tag: ${{ steps.tag.outputs.tag }}        Expose step output as job output
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4                     Checkout repository code
+        with:
+          fetch-depth: 0                              Fetch full history for all branches
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'                      Set up specific Python version
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'                                Cache npm dependencies
+
+      - name: Cache Dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip                          Directory to cache
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}  Cache key
+          restore-keys: |
+            ${{ runner.os }}-pip-                     Fallback cache keys
+
+      - name: Run Shell Command
+        run: echo "Hello World"                       Single line shell command
+
+      - name: Multi-line Shell
+        run: |
+          pip install -r requirements.txt
+          pytest tests/
+          echo "Done"
+
+      - name: Set Output Variable
+        id: tag
+        run: echo "tag=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Use Output Variable
+        run: echo "Tag is ${{ steps.tag.outputs.tag }}"
+
+      - name: Set Environment Variable
+        run: echo "APP_VERSION=1.0.0" >> $GITHUB_ENV  Persist env var across steps
+
+      - name: Conditional Step
+        if: success()                                 Run only if previous steps passed
+        if: failure()                                 Run only if a previous step failed
+        if: always()                                  Always run this step
+        if: github.ref == 'refs/heads/main'          Run only on main branch
+        run: echo "Conditional step"
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-output                          Artifact name
+          path: dist/                                 Path to upload
+          retention-days: 7                           Keep artifact for 7 days
+
+      - name: Download Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: build-output
+          path: ./downloaded/
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-south-1
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: user/myapp:${{ github.sha }}
+          cache-from: type=gha                        Use GitHub Actions cache for Docker layers
+          cache-to: type=gha,mode=max
+
+      - name: Upload SARIF Security Report
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-results.sarif            Upload security scan results to GitHub
+
+--- CONTEXTS & EXPRESSIONS ---
+${{ github.actor }}                                   Username who triggered the workflow
+${{ github.event_name }}                             Event that triggered workflow
+${{ github.ref }}                                     Full ref e.g. refs/heads/main
+${{ github.sha }}                                     Full git commit SHA
+${{ github.run_number }}                             Sequential run number for workflow
+${{ github.repository }}                             Owner and repo name e.g. org/repo
+${{ github.workspace }}                              Runner workspace path
+${{ runner.os }}                                     Runner OS: Linux, Windows, macOS
+${{ secrets.MY_SECRET }}                             Access a repository secret
+${{ vars.MY_VAR }}                                   Access a repository variable
+${{ inputs.environment }}                            Access workflow_dispatch input
+${{ needs.build.outputs.image-tag }}                 Access output from another job
+${{ matrix.python-version }}                         Access current matrix value
+${{ env.MY_ENV_VAR }}                                Access environment variable
+${{ toJSON(github) }}                                Convert context to JSON string
+${{ fromJSON(steps.data.outputs.json).key }}         Parse JSON and access a key
+${{ format('Hello {0}', github.actor) }}             String formatting function
+${{ contains(github.ref, 'main') }}                  Check if string contains value
+${{ startsWith(github.ref, 'refs/tags/') }}          Check if string starts with value
+
+--- REUSABLE WORKFLOWS ---
+on:
+  workflow_call:                                      Mark workflow as reusable
+    inputs:
+      environment: { required: true, type: string }
+    secrets:
+      token: { required: true }
+
+jobs:
+  deploy:
+    uses: org/repo/.github/workflows/deploy.yml@main  Call a reusable workflow
+    with:
+      environment: production
+    secrets:
+      token: ${{ secrets.GITHUB_TOKEN }}
+
+--- GITHUB TOKEN & PERMISSIONS ---
+${{ secrets.GITHUB_TOKEN }}                           Auto-generated token for repo operations
+permissions: read-all                                 Set all permissions to read
+permissions: write-all                               Set all permissions to write
+permissions: { contents: write, packages: read }     Fine-grained permission control
+
+--- COMMON PATTERNS ---
+gh workflow run deploy.yml --ref main               Trigger workflow using GitHub CLI
+gh run list --workflow=deploy.yml                   List recent runs of a workflow
+gh run watch RUN_ID                                  Watch a live run in terminal
+gh run download RUN_ID                              Download artifacts from a run
+
+
+==============================================================
+ 11. ARGOCD CLI
+==============================================================
+
+--- LOGIN & CONTEXT ---
+argocd version                                        Show ArgoCD client and server version
+argocd login ARGOCD_SERVER                           Log in to ArgoCD server
+argocd login ARGOCD_SERVER --grpc-web               Login using grpc-web (when behind proxy)
+argocd login ARGOCD_SERVER --insecure               Skip TLS verification during login
+argocd login ARGOCD_SERVER --username admin --password PASS  Login with username and password
+argocd logout ARGOCD_SERVER                          Log out from ArgoCD server
+argocd context                                        Show current ArgoCD context
+argocd context CONTEXT_NAME                          Switch to a different context
+
+--- APPLICATIONS ---
+argocd app list                                       List all ArgoCD applications
+argocd app list -o wide                              List apps with extended information
+argocd app get APPNAME                               Show detailed status of an application
+argocd app get APPNAME --show-params                 Show app parameters and values
+argocd app create APPNAME \
+  --repo https://github.com/org/repo.git \
+  --path kubernetes/ \
+  --dest-server https://kubernetes.default.svc \
+  --dest-namespace myapp \
+  --sync-policy automated                            Create a new ArgoCD application
+argocd app delete APPNAME                            Delete an application
+argocd app delete APPNAME --cascade                 Delete app and all its Kubernetes resources
+
+--- SYNC & STATUS ---
+argocd app sync APPNAME                              Sync application with Git source
+argocd app sync APPNAME --force                     Force sync by deleting and recreating resources
+argocd app sync APPNAME --prune                     Allow deleting resources no longer in Git
+argocd app sync APPNAME --dry-run                   Preview sync changes without applying
+argocd app sync APPNAME --resource apps:Deployment:myapp  Sync only a specific resource
+argocd app wait APPNAME                              Wait until application is healthy and synced
+argocd app wait APPNAME --sync                      Wait until sync operation completes
+argocd app wait APPNAME --health                    Wait until health check passes
+argocd app wait APPNAME --timeout 120               Wait with a timeout in seconds
+
+--- HISTORY & ROLLBACK ---
+argocd app history APPNAME                           Show deployment history of an application
+argocd app rollback APPNAME REVISION_ID             Rollback to a specific revision
+argocd app rollback APPNAME 3                       Rollback to revision number 3
+
+--- DIFF & MANIFESTS ---
+argocd app diff APPNAME                              Show diff between Git and live cluster state
+argocd app manifests APPNAME                         Show live Kubernetes manifests of the app
+argocd app manifests APPNAME --revision HEAD        Show manifests at a specific revision
+argocd app resources APPNAME                         List all Kubernetes resources of the app
+
+--- PROJECTS ---
+argocd proj list                                      List all ArgoCD projects
+argocd proj get PROJECTNAME                          Show details of a project
+argocd proj create PROJECTNAME                       Create a new project
+argocd proj delete PROJECTNAME                       Delete a project
+argocd proj add-destination PROJECTNAME SERVER NS   Add allowed destination cluster and namespace
+argocd proj add-source PROJECTNAME REPO_URL         Add allowed source repository
+argocd proj allow-cluster-resource PROJECTNAME GROUP KIND  Allow cluster-level resource type
+argocd proj role list PROJECTNAME                   List roles in a project
+argocd proj role create PROJECTNAME ROLENAME        Create a role in a project
+
+--- REPOSITORIES ---
+argocd repo list                                      List all connected repositories
+argocd repo add https://github.com/org/repo.git     Add a public repository
+argocd repo add https://github.com/org/repo.git --username USER --password TOKEN  Add private repo
+argocd repo add git@github.com:org/repo.git --ssh-private-key-path ~/.ssh/id_rsa  Add repo with SSH key
+argocd repo rm https://github.com/org/repo.git     Remove a repository
+
+--- CLUSTERS ---
+argocd cluster list                                   List all connected clusters
+argocd cluster get SERVER_URL                        Show details of a cluster
+argocd cluster add CONTEXT_NAME                      Add cluster from local kubeconfig context
+argocd cluster rm SERVER_URL                         Remove a cluster from ArgoCD
+
+--- USER & ACCOUNT MANAGEMENT ---
+argocd account list                                   List all ArgoCD user accounts
+argocd account get --account USERNAME               Get details of a user account
+argocd account update-password                       Update current user password interactively
+argocd account update-password --account admin --current-password OLD --new-password NEW
+argocd account generate-token --account USERNAME    Generate API token for an account
+argocd account can-i sync applications '*'          Check if current account can perform action
+
+--- SETTINGS & ADMINISTRATION ---
+argocd admin settings validate --argocd-cm-path argocd-cm.yaml  Validate config map settings
+argocd admin app generate-spec APPNAME              Generate app spec YAML
+argocd admin cluster generate-spec CLUSTERNAME      Generate cluster spec YAML
+argocd admin export > backup.yaml                   Export all ArgoCD resources to file
+argocd admin import < backup.yaml                   Import ArgoCD resources from file
+
+--- GPGKEYS ---
+argocd gpg list                                       List configured GPG keys
+argocd gpg add --from KEY_FILE                       Add a GPG public key for commit verification
+argocd gpg rm FINGERPRINT                            Remove a GPG key
+
+--- COMMON PATTERNS ---
+argocd app list -o json | jq '.[] | select(.status.sync.status=="OutOfSync") | .metadata.name'  Find all OutOfSync apps
+argocd app sync --selector env=production            Sync all apps matching a label selector
+argocd app set APPNAME --sync-policy automated      Enable auto-sync on existing app
+argocd app set APPNAME --self-heal                  Enable self-healing on existing app
+argocd app set APPNAME --auto-prune                 Enable auto-prune on existing app
+argocd app set APPNAME --revision v1.0.0            Pin app to a specific Git tag or branch
+argocd app patch APPNAME --patch '{"spec":{"source":{"targetRevision":"v2.0.0"}}}'  Patch app spec
+
+
+==============================================================
+ 12. TRIVY
+==============================================================
+
+--- VERSION & SETUP ---
+trivy --version                                       Show installed Trivy version
+trivy --help                                          Show all available commands and flags
+trivy image --download-db-only                       Download vulnerability database only
+trivy image --reset                                  Reset Trivy cache and database
+
+--- IMAGE SCANNING ---
+trivy image nginx                                     Scan a Docker image from Docker Hub
+trivy image nginx:1.27                               Scan a specific image tag
+trivy image myapp:v1                                 Scan a locally built image
+trivy image --severity HIGH,CRITICAL nginx           Show only HIGH and CRITICAL vulnerabilities
+trivy image --severity CRITICAL nginx                Show only CRITICAL vulnerabilities
+trivy image --exit-code 1 nginx                     Return exit code 1 if vulnerabilities found
+trivy image --exit-code 1 --severity HIGH,CRITICAL nginx  Exit 1 only on HIGH or CRITICAL findings
+trivy image --ignore-unfixed nginx                   Hide vulnerabilities with no available fix
+trivy image --exit-code 1 --ignore-unfixed --severity HIGH,CRITICAL nginx  Production gate pattern
+trivy image --format table nginx                     Output results as a text table (default)
+trivy image --format json nginx                     Output results as JSON
+trivy image --format sarif nginx                    Output as SARIF for GitHub Security tab
+trivy image --format cyclonedx nginx                Output as CycloneDX SBOM format
+trivy image --output report.txt nginx               Save results to a file
+trivy image --output trivy-report.json --format json nginx  Save JSON report to file
+trivy image --ignore-policy .trivyignore nginx      Apply an ignore policy file
+trivy image --skip-db-update nginx                  Use cached database without updating
+trivy image --timeout 10m nginx                     Set scan timeout to 10 minutes
+trivy image --no-progress nginx                     Hide progress bar during scan
+trivy image --platform linux/amd64 nginx            Scan image for a specific platform
+trivy image --vuln-type os nginx                    Scan only OS package vulnerabilities
+trivy image --vuln-type library nginx               Scan only language library vulnerabilities
+
+--- FILESYSTEM SCANNING ---
+trivy fs .                                            Scan current directory for vulnerabilities
+trivy fs /path/to/project                            Scan a specific directory
+trivy fs --severity HIGH,CRITICAL .                  Scan filesystem with severity filter
+trivy fs --exit-code 1 .                            Return exit code 1 if vulnerabilities found
+trivy fs --format json --output fs-report.json .    Save filesystem scan to JSON report
+trivy fs --security-checks vuln .                   Scan only for known vulnerabilities
+trivy fs --security-checks secret .                 Scan only for hardcoded secrets
+trivy fs --security-checks config .                 Scan only for misconfigurations
+trivy fs --security-checks vuln,secret,config .     Scan for all issue types
+
+--- REPOSITORY SCANNING ---
+trivy repo https://github.com/org/repo              Scan a remote GitHub repository
+trivy repo https://github.com/org/repo --branch main  Scan a specific branch
+trivy repo --severity HIGH,CRITICAL https://github.com/org/repo  Scan with severity filter
+
+--- CONFIGURATION SCANNING ---
+trivy config .                                        Scan IaC config files for misconfigurations
+trivy config ./terraform/                             Scan Terraform files for issues
+trivy config ./kubernetes/                            Scan Kubernetes manifests for issues
+trivy config --severity HIGH,CRITICAL .              Filter config scan results by severity
+trivy config --format json --output config-report.json .  Save config scan as JSON
+
+--- SBOM (SOFTWARE BILL OF MATERIALS) ---
+trivy image --format cyclonedx --output sbom.json nginx  Generate CycloneDX SBOM for image
+trivy image --format spdx-json --output sbom.spdx.json nginx  Generate SPDX SBOM
+trivy sbom sbom.json                                 Scan an existing SBOM file for vulnerabilities
+
+--- KUBERNETES SCANNING ---
+trivy k8s --report summary cluster                   Scan entire Kubernetes cluster summary
+trivy k8s --report all cluster                       Full detailed scan of Kubernetes cluster
+trivy k8s --severity HIGH,CRITICAL cluster           Scan cluster filtering by severity
+trivy k8s pod PODNAME                                Scan a specific pod image
+trivy k8s --namespace myapp cluster                  Scan resources in a specific namespace
+
+--- IGNORE FILE (.trivyignore) ---
+CVE-2021-12345                                        Ignore a specific CVE by ID
+CVE-2022-67890                                        Add multiple CVEs to ignore list
+
+--- OUTPUT FORMATS ---
+--format table                                        Default human readable table output
+--format json                                         Machine readable JSON format
+--format sarif                                        SARIF format for GitHub Security tab upload
+--format cyclonedx                                    CycloneDX SBOM format
+--format spdx-json                                    SPDX JSON SBOM format
+--format template --template "@contrib/html.tpl"     Custom HTML report using template
+
+--- SEVERITY LEVELS ---
+CRITICAL                                              Critical severity vulnerability
+HIGH                                                  High severity vulnerability
+MEDIUM                                                Medium severity vulnerability
+LOW                                                   Low severity vulnerability
+UNKNOWN                                               Unknown severity vulnerability
+
+--- COMMON CI/CD PIPELINE PATTERNS ---
+trivy image --exit-code 0 --severity MEDIUM,LOW nginx                  Scan but never block on low severity
+trivy image --exit-code 1 --ignore-unfixed --severity HIGH,CRITICAL nginx  Block only on fixable HIGH/CRITICAL
+trivy image --format sarif --output results.sarif nginx                Generate SARIF for GitHub upload
+trivy fs --security-checks secret .                                    Scan for secrets before commit
+trivy config --exit-code 1 ./terraform/                                Block on IaC misconfigurations
+trivy image --format json --output report.json nginx && cat report.json | jq '.Results[].Vulnerabilities | length'  Count total vulnerabilities
+
+
+==============================================================
+ 13. SONARQUBE
+==============================================================
+
+--- SONAR SCANNER CLI ---
+sonar-scanner                                         Run analysis using sonar-project.properties
+sonar-scanner -Dsonar.projectKey=myapp               Override project key on command line
+sonar-scanner -Dsonar.host.url=http://localhost:9000  Override SonarQube server URL
+sonar-scanner -Dsonar.login=TOKEN                     Pass authentication token
+sonar-scanner -Dsonar.branch.name=feature/myfeature  Analyse a specific branch
+sonar-scanner -Dsonar.verbose=true                    Run with verbose debug output
+
+--- SONAR-PROJECT.PROPERTIES ---
+sonar.projectKey=myapp                                Unique project key in SonarQube
+sonar.projectName=My Application                     Display name in SonarQube UI
+sonar.projectVersion=1.0                             Project version label
+sonar.sources=src                                    Directory containing source code
+sonar.language=py                                    Programming language of the project
+sonar.python.version=3.11                            Python version for analysis
+sonar.exclusions=**/__pycache__/**,**/*.pyc          Exclude files from analysis
+sonar.tests=tests                                    Directory containing test files
+sonar.python.coverage.reportPaths=coverage.xml       Path to coverage report for Python
+sonar.javascript.lcov.reportPaths=lcov.info          Path to LCOV coverage for JS
+sonar.sourceEncoding=UTF-8                           Source file encoding
+sonar.scm.provider=git                               Source control manager type
+
+--- QUALITY GATES ---
+Quality Gate = set of conditions a project must pass to be considered production ready
+Default conditions: coverage >= 80%, new bugs = 0, new vulnerabilities = 0, new smells <= 10
+waitForQualityGate abortPipeline: true               Jenkins: block pipeline if gate fails
+
+--- SONARQUBE ADMIN API ---
+curl -u TOKEN: http://localhost:9000/api/projects/search                  List all projects
+curl -u TOKEN: http://localhost:9000/api/qualitygates/list                List quality gates
+curl -u TOKEN: http://localhost:9000/api/issues/search?projectKeys=myapp  Get project issues
+curl -u TOKEN: -X POST http://localhost:9000/api/projects/delete?project=myapp  Delete project
+
+--- METRICS EXPLAINED ---
+Bugs             Code that is clearly wrong and will cause runtime issues
+Vulnerabilities  Security issues that could be exploited by attackers
+Code Smells      Maintainability issues that make code hard to change
+Coverage         Percentage of code executed by unit tests
+Duplication      Percentage of duplicated code blocks
+Debt             Estimated time to fix all code smells
+
+--- COMMON PATTERNS ---
+sonar-scanner -Dsonar.login=$SONAR_TOKEN -Dsonar.host.url=$SONAR_URL      CI/CD pipeline invocation
+curl -s -u $TOKEN: "$SONAR_URL/api/qualitygates/project_status?projectKey=myapp" | jq .projectStatus.status  Check gate status
+
+
+==============================================================
+ 14. PROMETHEUS
+==============================================================
+
+--- PROMQL BASICS ---
+up                                                    Show all scrape targets and their status
+up{job="myapp"}                                       Filter targets by job label
+process_cpu_seconds_total                             Total CPU time used by a process
+process_resident_memory_bytes                         Resident memory usage of a process
+go_goroutines                                         Number of goroutines in a Go process
+http_requests_total                                   Total HTTP requests counter
+http_request_duration_seconds                         Histogram of request durations
+
+--- PROMQL OPERATORS ---
++  -  *  /  %  ^                                      Arithmetic operators
+==  !=  >  <  >=  <=                                  Comparison operators
+and  or  unless                                       Logical operators
+by (label)                                            Group results by label
+without (label)                                       Group results excluding a label
+ignoring (label)                                      Match metrics ignoring a label
+on (label)                                            Match metrics only on a label
+
+--- PROMQL FUNCTIONS ---
+rate(metric[5m])                                      Per-second rate of increase over 5 minutes
+irate(metric[5m])                                     Instantaneous rate using last two data points
+increase(metric[1h])                                  Total increase over 1 hour
+sum(metric)                                           Sum of all values
+avg(metric)                                           Average of all values
+max(metric)                                           Maximum value
+min(metric)                                           Minimum value
+count(metric)                                         Count of time series
+topk(5, metric)                                       Top 5 series by value
+bottomk(3, metric)                                    Bottom 3 series by value
+histogram_quantile(0.95, rate(duration_bucket[5m]))   95th percentile latency from histogram
+predict_linear(metric[1h], 3600)                      Predict value 1 hour into the future
+absent(metric)                                        Return 1 if metric has no data (alerting)
+changes(metric[1h])                                   Number of times a gauge changed value
+deriv(metric[5m])                                     Per-second derivative of a gauge
+delta(metric[5m])                                     Difference between first and last in range
+
+--- COMMON QUERIES ---
+100 - (avg by(instance)(rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)    CPU usage %
+node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes * 100                 Free memory %
+rate(node_network_receive_bytes_total[5m])                                        Network receive rate
+rate(node_disk_io_time_seconds_total[5m])                                         Disk IO utilization
+count(kube_pod_info)                                                              Total running pods
+count(kube_pod_status_phase{phase!="Running"})                                    Non-running pods
+kube_node_status_condition{condition="DiskPressure",status="true"}                Nodes with disk pressure
+sum(rate(http_requests_total[5m])) by (status_code)                               HTTP request rate by status
+histogram_quantile(0.99, sum(rate(http_duration_seconds_bucket[5m])) by (le))     P99 latency
+
+--- ALERTING RULES ---
+groups:
+- name: node-alerts
+  rules:
+  - alert: HighCPU
+    expr: 100 - (avg by(instance)(rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+    for: 5m                                           Alert fires if condition holds for 5 minutes
+    labels:
+      severity: warning
+    annotations:
+      summary: "CPU usage above 80% on {{ $labels.instance }}"
+
+  - alert: PodCrashLooping
+    expr: rate(kube_pod_container_status_restarts_total[15m]) > 0
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Pod {{ $labels.pod }} is crash looping"
+
+--- PROMETHEUS CONFIG (prometheus.yml) ---
+global:
+  scrape_interval: 15s                               How often to scrape targets
+  evaluation_interval: 15s                           How often to evaluate rules
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ["alertmanager:9093"]
+
+rule_files:
+  - "alerts/*.yml"                                    Load alerting rule files
+
+scrape_configs:
+  - job_name: prometheus                             Scrape Prometheus itself
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  - job_name: node
+    static_configs:
+      - targets: ["node-exporter:9100"]
+
+  - job_name: myapp                                  Scrape a custom application
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["myapp:5000"]
+
+--- PROMETHEUS HTTP API ---
+curl http://localhost:9090/api/v1/query?query=up                          Instant query
+curl http://localhost:9090/api/v1/query_range?query=up&start=...&end=...  Range query
+curl http://localhost:9090/api/v1/targets                                 List all scrape targets
+curl http://localhost:9090/api/v1/rules                                   List all alerting rules
+curl http://localhost:9090/api/v1/alerts                                  List all active alerts
+curl -X POST http://localhost:9090/-/reload                               Reload config without restart
+curl http://localhost:9090/-/healthy                                       Health check endpoint
+curl http://localhost:9090/-/ready                                         Readiness check endpoint
+
+
+==============================================================
+ 15. ANSIBLE
+==============================================================
+
+--- BASICS ---
+ansible --version                                     Show installed Ansible version
+ansible all -i inventory.ini -m ping                  Test connectivity to all hosts
+ansible webservers -i inventory.ini -m ping           Ping only hosts in webservers group
+ansible all -i inventory.ini -m command -a "uptime"   Run a command on all hosts
+ansible all -i inventory.ini -m shell -a "df -h"      Run shell command on all hosts
+ansible-playbook playbook.yml                         Run a playbook
+ansible-playbook playbook.yml -i inventory.ini        Run playbook with specific inventory
+ansible-playbook playbook.yml --check                 Dry run - show what would change
+ansible-playbook playbook.yml --diff                  Show file diffs when changed
+ansible-playbook playbook.yml -v                      Verbose output
+ansible-playbook playbook.yml -vvv                    Extra verbose debug output
+ansible-playbook playbook.yml --tags deploy           Run only tasks tagged deploy
+ansible-playbook playbook.yml --skip-tags test        Skip tasks tagged test
+ansible-playbook playbook.yml --limit webservers      Run only on webservers group
+ansible-playbook playbook.yml --limit 192.168.1.10    Run only on specific host
+ansible-playbook playbook.yml -e "version=1.5"        Pass extra variable
+ansible-playbook playbook.yml -e @vars.yml            Pass variables from a file
+ansible-playbook playbook.yml --start-at-task "Install nginx"  Start from a specific task
+ansible-playbook playbook.yml --step                  Confirm each task before running
+
+--- INVENTORY ---
+ansible-inventory -i inventory.ini --list             Show all hosts in JSON format
+ansible-inventory -i inventory.ini --graph            Show host hierarchy as graph
+ansible-inventory -i inventory.ini --host webserver1  Show variables for a host
+
+Inventory file (inventory.ini):
+[webservers]
+web1 ansible_host=192.168.1.10 ansible_user=ubuntu
+web2 ansible_host=192.168.1.11 ansible_user=ubuntu
+
+[databases]
+db1 ansible_host=192.168.1.20
+
+[all:vars]
+ansible_ssh_private_key_file=~/.ssh/id_rsa
+ansible_python_interpreter=/usr/bin/python3
+
+--- AD-HOC COMMANDS ---
+ansible all -m apt -a "name=nginx state=present" -b   Install nginx on all hosts (with sudo)
+ansible all -m service -a "name=nginx state=started"  Start nginx on all hosts
+ansible all -m copy -a "src=file.conf dest=/etc/file.conf"  Copy file to hosts
+ansible all -m file -a "path=/tmp/test state=directory"     Create directory on hosts
+ansible all -m shell -a "systemctl status nginx"      Check service status on all hosts
+ansible all -m setup                                   Gather all facts from hosts
+ansible all -m setup -a "filter=ansible_distribution" Show OS distribution of hosts
+
+--- PLAYBOOK STRUCTURE ---
+---
+- name: Configure web servers                        Play name
+  hosts: webservers                                  Target host group
+  become: true                                       Run all tasks with sudo
+  vars:                                              Play-level variables
+    nginx_port: 80
+    app_dir: /var/www/html
+
+  vars_files:
+    - group_vars/webservers.yml                      Load variables from external file
+
+  pre_tasks:                                         Tasks that run before roles
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+  roles:                                             Apply roles to hosts
+    - nginx
+    - myapp
+
+  tasks:
+    - name: Install nginx
+      apt:
+        name: nginx
+        state: present
+      tags: [install, nginx]
+
+    - name: Start and enable nginx
+      service:
+        name: nginx
+        state: started
+        enabled: yes
+
+    - name: Copy config file
+      template:
+        src: nginx.conf.j2
+        dest: /etc/nginx/nginx.conf
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Reload nginx
+
+    - name: Create directory
+      file:
+        path: "{{ app_dir }}"
+        state: directory
+        owner: www-data
+        mode: '0755'
+
+    - name: Run command only if condition is true
+      command: echo "hello"
+      when: ansible_os_family == "Debian"
+
+    - name: Loop over a list
+      apt:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - nginx
+        - git
+        - curl
+
+    - name: Register output of a command
+      command: cat /etc/os-release
+      register: os_info
+
+    - name: Print registered variable
+      debug:
+        msg: "{{ os_info.stdout }}"
+
+    - name: Fail with message if condition met
+      fail:
+        msg: "This only works on Ubuntu"
+      when: ansible_distribution != "Ubuntu"
+
+    - name: Run block with error handling
+      block:
+        - name: Try something
+          command: /bin/false
+      rescue:
+        - name: Handle error
+          debug:
+            msg: "Something failed"
+      always:
+        - name: Always run cleanup
+          debug:
+            msg: "Cleanup done"
+
+  handlers:
+    - name: Reload nginx
+      service:
+        name: nginx
+        state: reloaded
+
+  post_tasks:
+    - name: Verify nginx is running
+      uri:
+        url: http://localhost
+        status_code: 200
+
+--- MODULES REFERENCE ---
+apt / yum / dnf         Install packages on Debian / RHEL / Fedora systems
+service / systemd       Manage system services
+copy                    Copy files from control node to managed hosts
+template                Copy Jinja2 template to hosts with variable substitution
+file                    Manage files and directories on managed hosts
+lineinfile              Ensure a line exists or does not exist in a file
+blockinfile             Insert a block of text in a file
+command                 Run a command without shell processing
+shell                   Run a command through the shell
+raw                     Run raw SSH command without Python on managed host
+script                  Run a script from control node on managed host
+uri                     Make HTTP requests from managed host
+get_url                 Download a file from a URL on managed host
+unarchive               Unpack zip or tar archives on managed host
+git                     Clone or pull a git repository
+user                    Create and manage user accounts
+group                   Create and manage groups
+cron                    Manage cron jobs on managed hosts
+mount                   Control mount points
+stat                    Get file or directory metadata
+setup                   Gather facts about managed hosts
+debug                   Print debug messages during playbook run
+fail                    Explicitly fail with a custom message
+assert                  Assert a condition is true or fail
+wait_for                Wait for port or file to be available
+wait_for_connection     Wait until host is reachable via SSH
+
+--- ANSIBLE VAULT ---
+ansible-vault encrypt secrets.yml                     Encrypt a file with a password
+ansible-vault decrypt secrets.yml                     Decrypt a file
+ansible-vault view secrets.yml                        View encrypted file without decrypting
+ansible-vault edit secrets.yml                        Edit an encrypted file
+ansible-vault rekey secrets.yml                       Change the vault password
+ansible-playbook playbook.yml --ask-vault-pass        Prompt for vault password during run
+ansible-playbook playbook.yml --vault-password-file pass.txt  Use password from file
+ansible-vault encrypt_string 'mysecret' --name 'db_password'  Encrypt a single string value
+
+--- ROLES ---
+ansible-galaxy init myrole                            Create a new role with standard structure
+ansible-galaxy install geerlingguy.nginx              Install role from Ansible Galaxy
+ansible-galaxy install -r requirements.yml            Install all roles from requirements file
+ansible-galaxy list                                   List all installed roles
+ansible-galaxy remove geerlingguy.nginx               Remove an installed role
+
+Role directory structure:
+roles/myrole/
+  tasks/main.yml      Main task file loaded automatically
+  handlers/main.yml   Handlers triggered by notify
+  templates/          Jinja2 template files (.j2)
+  files/              Static files to copy to managed hosts
+  vars/main.yml       Variables (higher priority than defaults)
+  defaults/main.yml   Default variables (lowest priority)
+  meta/main.yml       Role metadata and dependencies
+
+--- JINJA2 TEMPLATES ---
+{{ variable }}                                        Insert a variable value
+{{ ansible_hostname }}                               Insert host fact
+{% if condition %}...{% endif %}                      Conditional block
+{% for item in list %}...{% endfor %}                 Loop block
+{{ variable | default('fallback') }}                  Use default if variable is undefined
+{{ variable | upper }}                                Convert to uppercase
+{{ variable | lower }}                                Convert to lowercase
+{{ list | join(',') }}                                Join list with separator
+{{ dict | to_json }}                                  Convert variable to JSON
+{{ variable | bool }}                                 Convert to boolean
+
+
+==============================================================
+ 16. NGINX
+==============================================================
+
+--- SERVICE MANAGEMENT ---
+nginx -v                                              Show Nginx version
+nginx -V                                              Show version with build options
+nginx -t                                              Test configuration for syntax errors
+nginx -T                                              Test config and print full config to stdout
+nginx -s reload                                       Reload config without dropping connections
+nginx -s stop                                         Fast shutdown of Nginx
+nginx -s quit                                         Graceful shutdown after serving requests
+nginx -s reopen                                       Reopen log files (after log rotation)
+systemctl start nginx                                 Start Nginx service
+systemctl stop nginx                                  Stop Nginx service
+systemctl restart nginx                               Restart Nginx service
+systemctl reload nginx                                Reload config via systemd
+systemctl enable nginx                                Enable Nginx to start on boot
+systemctl status nginx                                Check Nginx service status
+
+--- BASIC CONFIGURATION ---
+/etc/nginx/nginx.conf                                 Main Nginx configuration file
+/etc/nginx/sites-available/                           Directory for virtual host configs
+/etc/nginx/sites-enabled/                             Symlinked enabled virtual hosts
+/etc/nginx/conf.d/                                    Alternative directory for server configs
+/var/www/html/                                        Default web root directory
+/var/log/nginx/access.log                             Access log file
+/var/log/nginx/error.log                              Error log file
+
+ln -s /etc/nginx/sites-available/mysite /etc/nginx/sites-enabled/   Enable a site
+rm /etc/nginx/sites-enabled/mysite                    Disable a site
+
+--- STATIC WEBSITE SERVER BLOCK ---
+server {
+    listen 80;                                        Listen on port 80
+    listen [::]:80;                                   Listen on IPv6 port 80
+    server_name example.com www.example.com;          Domain names for this server
+
+    root /var/www/html;                               Web root directory
+    index index.html index.htm;                       Default index files
+
+    location / {
+        try_files $uri $uri/ =404;                    Serve file or directory, 404 if not found
+    }
+
+    access_log /var/log/nginx/example.access.log;     Custom access log location
+    error_log  /var/log/nginx/example.error.log;      Custom error log location
+}
+
+--- REVERSE PROXY BLOCK ---
+server {
+    listen 80;
+    server_name api.example.com;
+
+    location / {
+        proxy_pass http://localhost:5000;             Forward requests to backend app
+        proxy_http_version 1.1;                       Use HTTP 1.1 for keep-alive
+        proxy_set_header Upgrade $http_upgrade;       Pass WebSocket upgrade header
+        proxy_set_header Connection 'upgrade';        Pass WebSocket connection header
+        proxy_set_header Host $host;                  Pass original host header
+        proxy_set_header X-Real-IP $remote_addr;      Pass client real IP to backend
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;  Pass forwarded IP chain
+        proxy_set_header X-Forwarded-Proto $scheme;   Pass http or https scheme
+        proxy_cache_bypass $http_upgrade;             Bypass cache for WebSocket
+        proxy_connect_timeout 60s;                    Timeout to connect to upstream
+        proxy_send_timeout 60s;                       Timeout to send request to upstream
+        proxy_read_timeout 60s;                       Timeout to read response from upstream
+    }
+}
+
+--- HTTPS WITH SSL ---
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    server_name example.com;
+
+    ssl_certificate /etc/nginx/ssl/example.crt;      Path to SSL certificate file
+    ssl_certificate_key /etc/nginx/ssl/example.key;  Path to SSL private key file
+    ssl_protocols TLSv1.2 TLSv1.3;                   Allowed TLS protocol versions
+    ssl_ciphers HIGH:!aNULL:!MD5;                    Allowed cipher suites
+    ssl_prefer_server_ciphers on;                    Server chooses cipher from its list
+
+    add_header Strict-Transport-Security "max-age=31536000" always;  HSTS header
+    add_header X-Frame-Options DENY;                  Prevent clickjacking
+    add_header X-Content-Type-Options nosniff;        Prevent MIME type sniffing
+
+    location / {
+        proxy_pass http://localhost:5000;
+    }
+}
+
+server {
+    listen 80;
+    server_name example.com;
+    return 301 https://$host$request_uri;             Redirect all HTTP to HTTPS permanently
+}
+
+--- LOAD BALANCER ---
+upstream backend {
+    server 192.168.1.10:5000;                         Backend server 1
+    server 192.168.1.11:5000;                         Backend server 2
+    server 192.168.1.12:5000 backup;                 Only used when others are down
+    server 192.168.1.13:5000 weight=3;               Gets 3x more traffic than weight 1
+    server 192.168.1.14:5000 max_fails=3 fail_timeout=30s;  Mark as down after 3 failures
+    keepalive 32;                                     Keep 32 idle connections to upstream
+}
+
+upstream backend {
+    least_conn;                                       Send to server with fewest connections
+}
+
+upstream backend {
+    ip_hash;                                          Same client always goes to same server
+}
+
+server {
+    listen 80;
+    location / {
+        proxy_pass http://backend;
+    }
+}
+
+--- CACHING ---
+proxy_cache_path /var/cache/nginx levels=1:2 keys_zone=mycache:10m max_size=1g;  Define cache
+
+server {
+    location / {
+        proxy_cache mycache;                          Enable caching for this location
+        proxy_cache_valid 200 1d;                    Cache 200 responses for 1 day
+        proxy_cache_valid 404 1m;                    Cache 404 responses for 1 minute
+        proxy_cache_use_stale error timeout;          Serve stale cache on error or timeout
+        add_header X-Cache-Status $upstream_cache_status;  Show cache hit/miss in response
+        proxy_pass http://backend;
+    }
+}
+
+--- RATE LIMITING ---
+limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;  Define rate limit zone
+
+server {
+    location /api/ {
+        limit_req zone=api burst=20 nodelay;          Apply rate limit with burst of 20 requests
+        proxy_pass http://backend;
+    }
+}
+
+--- GZIP COMPRESSION ---
+gzip on;                                              Enable gzip compression
+gzip_types text/plain text/css application/json application/javascript;  MIME types to compress
+gzip_min_length 1000;                                 Only compress responses over 1000 bytes
+gzip_comp_level 6;                                    Compression level 1 (fast) to 9 (best)
+gzip_vary on;                                         Add Vary: Accept-Encoding response header
+
+--- SECURITY HEADERS ---
+add_header X-Frame-Options "SAMEORIGIN";             Prevent embedding in other sites frames
+add_header X-XSS-Protection "1; mode=block";         Enable browser XSS protection
+add_header X-Content-Type-Options "nosniff";          Prevent MIME sniffing
+add_header Referrer-Policy "no-referrer-when-downgrade";  Control referrer header
+add_header Content-Security-Policy "default-src 'self'";  CSP header
+server_tokens off;                                    Hide Nginx version in response headers
+
+--- LOCATION DIRECTIVES ---
+location / { }                                        Match all requests (prefix match)
+location = /exact { }                                 Exact match for /exact only
+location ~ \.php$ { }                                Case-sensitive regex match
+location ~* \.jpg$ { }                               Case-insensitive regex match
+location ^~ /static/ { }                             Prefix match that stops regex checking
+location /api/ { proxy_pass http://api; }             Proxy /api/ requests to api backend
+location ~* \.(jpg|png|gif|css|js)$ {
+    expires 30d;                                      Cache static assets for 30 days
+    add_header Cache-Control "public, immutable";
+}
+
+--- USEFUL NGINX VARIABLES ---
+$host                                                 Request hostname (or server_name)
+$request_uri                                          Full original request URI with arguments
+$uri                                                  Current normalized request URI
+$args                                                 Query string parameters
+$remote_addr                                          Client IP address
+$server_port                                          Port server is listening on
+$scheme                                               Request scheme: http or https
+$request_method                                       HTTP method: GET POST etc
+$status                                               HTTP response status code
+$body_bytes_sent                                      Number of bytes sent to client
+$http_user_agent                                      Client user agent string
+$upstream_addr                                        Address of upstream server used
+$upstream_response_time                               Response time from upstream
+$upstream_cache_status                                Cache: HIT MISS BYPASS EXPIRED
+
+--- LOG FORMAT ---
+log_format main '$remote_addr - $remote_user [$time_local] "$request" '
+                '$status $body_bytes_sent "$http_referer" "$http_user_agent"';
+
+access_log /var/log/nginx/access.log main;            Use custom log format
+access_log off;                                       Disable access logging entirely
+error_log /var/log/nginx/error.log warn;              Set minimum log level to warn
+
+--- COMMON PATTERNS ---
+nginx -t && systemctl reload nginx                    Test config then reload if valid
+tail -f /var/log/nginx/access.log                     Watch access log in real time
+tail -f /var/log/nginx/error.log                      Watch error log in real time
+cat /var/log/nginx/access.log | awk '{print $1}' | sort | uniq -c | sort -rn | head  Top IPs
+cat /var/log/nginx/access.log | awk '{print $9}' | sort | uniq -c | sort -rn           Status codes
+
+
+==============================================================
+ END OF DEVOPS CHEATSHEET
+==============================================================
+
+Sections Covered:
+  1.  Linux
+  2.  Git
+  3.  Docker
+  4.  Docker Compose
+  5.  Kubernetes (kubectl)
+  6.  Helm
+  7.  Terraform
+  8.  AWS CLI
+  9.  Jenkins
+  10. GitHub Actions
+  11. ArgoCD CLI
+  12. Trivy
+  13. SonarQube
+  14. Prometheus
+  15. Ansible
+  16. Nginx
+
